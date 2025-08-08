@@ -147,7 +147,7 @@ class ConfigGenerator extends GeneratorForAnnotation<Config> {
     buffer.writeln("  factory $className.fromMap(Map<String, dynamic> map) {");
     buffer.writeln("    return $className(");
     for (final e in fields) {
-      buffer.writeln("      ${unprivate(e.name)}: map['${e.name}'],");
+      buffer.writeln("      ${unprivate(e.name)}: map['${unprivate(e.name)}'],");
     }
     buffer.writeln("    );");
     buffer.writeln("  }");
@@ -157,7 +157,7 @@ class ConfigGenerator extends GeneratorForAnnotation<Config> {
     buffer.writeln("  static const schema = TableSchema(");
     buffer.writeln("    fields: {");
     for (final e in fields) {
-      buffer.writeln("    '${e.name}': $baseClassName._${e.name},");
+      buffer.writeln("    '${unprivate(e.name)}': $baseClassName._${e.name},");
     }
     buffer.writeln("    },");
     buffer.writeln("  );");
