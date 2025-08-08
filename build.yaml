@@ -1,0 +1,7 @@
+builders:
+  config_builder:
+    import: "package:config_gen/src/config_gen_base.dart"
+    builder_factories: ["configBuilder"]
+    auto_apply: root_package
+    build_to: source
+    build_extensions: { ".dart": [".g.dart"] }

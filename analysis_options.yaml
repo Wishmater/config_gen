@@ -1,0 +1,11 @@
+include: package:lints/recommended.yaml
+
+linter:
+  rules:
+    avoid_print: true
+    prefer_double_quotes: true
+    lines_longer_than_80_chars: false
+
+formatter:
+  page_width: 120
+  trailing_commas: preserve
