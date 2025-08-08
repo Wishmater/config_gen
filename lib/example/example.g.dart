@@ -7,20 +7,29 @@ part of 'example.dart';
 // ConfigGenerator
 // **************************************************************************
 
-class ExampleConfig with ExampleConfigBase {
+mixin ExampleConfigI {
+  String get fieldA;
+  double get fieldB;
+  int get fieldC;
+  bool? get fieldD;
+  String? get fieldE;
+}
+
+class ExampleConfig with ExampleConfigI, ExampleConfigBase {
   final String fieldA;
   final double fieldB;
   final int fieldC;
   final bool? fieldD;
   final String? fieldE;
 
-  const ExampleConfig({
+  ExampleConfig({
     required this.fieldA,
     required this.fieldB,
-    this.fieldC = 1,
+    int? fieldC,
     this.fieldD,
-    this.fieldE = "def",
-  });
+    String? fieldE,
+  }) : fieldC = fieldC ?? 1,
+       fieldE = fieldE ?? "def";
 
   factory ExampleConfig.fromMap(Map<String, dynamic> map) {
     return ExampleConfig(

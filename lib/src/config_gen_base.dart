@@ -84,8 +84,18 @@ class ConfigGenerator extends GeneratorForAnnotation<Config> {
     }
 
     final buffer = StringBuffer();
+
+    // generate abstract interface, to facilitate adding getters to user mixin
+    buffer.writeln("mixin ${className}I {");
+    for (final e in fields) {
+      buffer.writeln("  ${e.resType}${e.nullable ? '?' : ''} get ${e.name};");
+    }
+    buffer.writeln("}");
+
+    // generate concrete class
+    buffer.writeln();
     // buffer.writeln("@immutable");
-    buffer.writeln("class $className with $baseClassName {");
+    buffer.writeln("class $className with ${className}I, $baseClassName {");
 
     // add field declarations
     for (final e in fields) {
@@ -94,20 +104,50 @@ class ConfigGenerator extends GeneratorForAnnotation<Config> {
 
     // add constructor
     buffer.writeln("");
-    buffer.writeln("  const $className({");
+    // TODO: 3 maybe add an option to make class const
+    // generated class can't be const by default because it breaks most defaultTo declarations
+    // buffer.writeln("  const $className({");
+    buffer.writeln("  $className({");
+    bool hasDefaultTos = false;
     for (final e in fields) {
-      buffer.writeln(
-        "    ${e.isRequired ? "required " : ""}this.${e.name}${e.defaultTo != null ? " = ${e.defaultTo}" : ""},",
-      );
+      if (e.defaultTo == null && !e.name.startsWith("_")) {
+        buffer.writeln(
+          "    ${e.isRequired ? "required " : ""}this.${e.name},",
+        );
+      } else {
+        hasDefaultTos = true;
+        buffer.writeln("    ${e.isRequired ? "required " : ""}${e.resType}? ${unprivate(e.name)},");
+      }
     }
-    buffer.writeln("  });");
+    if (hasDefaultTos) {
+      // This hack is needed because default values in constructors must be const, which causes issues with custom
+      // objects like Duration. Initializing it here is more robust.
+      buffer.write("  }) : ");
+      bool addedAny = false;
+      for (final e in fields) {
+        if (e.defaultTo == null && !e.name.startsWith("_")) {
+          continue;
+        }
+        if (addedAny) {
+          buffer.writeln(",");
+        }
+        addedAny = true;
+        buffer.write("       ${e.name} = ${unprivate(e.name)}");
+        if (e.defaultTo != null) {
+          buffer.write(" ?? ${e.defaultTo}");
+        }
+      }
+      buffer.writeln(";");
+    } else {
+      buffer.writeln("  });");
+    }
 
     // add fromMap
     buffer.writeln("");
     buffer.writeln("  factory $className.fromMap(Map<String, dynamic> map) {");
     buffer.writeln("    return $className(");
     for (final e in fields) {
-      buffer.writeln("      ${e.name}: map['${e.name}'],");
+      buffer.writeln("      ${unprivate(e.name)}: map['${e.name}'],");
     }
     buffer.writeln("    );");
     buffer.writeln("  }");
@@ -137,6 +177,7 @@ class ConfigGenerator extends GeneratorForAnnotation<Config> {
       fieldType = type;
     } else {
       for (var supertype in type.element3.allSupertypes) {
+        // log.warning(type.asInstanceOf2(supertype.element3));
         if (supertype.element3.name3 == "Field" && supertype.typeArguments.length == 2) {
           fieldType = type.asInstanceOf2(supertype.element3);
           break;
@@ -146,6 +187,7 @@ class ConfigGenerator extends GeneratorForAnnotation<Config> {
     if (fieldType == null) {
       return null;
     }
+    // log.warning("${type} ${fieldType} ${fieldType.typeArguments} ${fieldType.element3}");
     // Return Res (second type argument)
     return fieldType.typeArguments[1];
   }
@@ -165,6 +207,13 @@ class ConfigGenerator extends GeneratorForAnnotation<Config> {
       // log.warning('Error extracting defaultTo source for field ${field.name3}: $e');
       return null;
     }
+  }
+
+  String unprivate(String string) {
+    while (string.startsWith("_")) {
+      string = string.substring(1);
+    }
+    return string;
   }
 }
 
