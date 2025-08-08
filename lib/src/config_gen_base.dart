@@ -154,7 +154,10 @@ class ConfigGenerator extends GeneratorForAnnotation<Config> {
 
     // add Schema
     buffer.writeln("");
-    buffer.writeln("  static const schema = TableSchema(");
+    buffer.writeln("  static TableSchema get schema => TableSchema(");
+    if (hasGetSchemaTablesMethod(element)) {
+      buffer.writeln("    tables: $baseClassName._getSchemaTables(),");
+    }
     buffer.writeln("    fields: {");
     for (final e in fields) {
       buffer.writeln("    '${unprivate(e.name)}': $baseClassName._${e.name},");
@@ -207,6 +210,24 @@ class ConfigGenerator extends GeneratorForAnnotation<Config> {
       // log.warning('Error extracting defaultTo source for field ${field.name3}: $e');
       return null;
     }
+  }
+
+  bool hasGetSchemaTablesMethod(MixinElement2 classElement) {
+    final method = classElement.getMethod2("_getSchemaTables");
+    if (method == null || !method.isStatic || method.formalParameters.isNotEmpty) {
+      return false;
+    }
+    final returnType = method.returnType;
+    if (returnType is! InterfaceType || returnType.element3.name3 != "Map") {
+      return false;
+    }
+    final typeArgs = returnType.typeArguments;
+    if (typeArgs.length != 2 ||
+        typeArgs[0].getDisplayString() != "String" ||
+        (typeArgs[1].getDisplayString() != "TableSchema" && typeArgs[1].getDisplayString() != "Schema")) {
+      return false;
+    }
+    return true;
   }
 
   String unprivate(String string) {
