@@ -41,7 +41,7 @@ class ExampleConfig with ExampleConfigI, ExampleConfigBase {
     );
   }
 
-  static const schema = TableSchema(
+  static TableSchema get schema => TableSchema(
     fields: {
       'fieldA': ExampleConfigBase._fieldA,
       'fieldB': ExampleConfigBase._fieldB,
