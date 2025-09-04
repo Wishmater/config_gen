@@ -29,7 +29,7 @@ class ConfigGenerator extends GeneratorForAnnotation<Config> {
     }
     if (!baseClassName.endsWith("Base")) {
       throw InvalidGenerationSourceError(
-        "Invalid name for mixin: null",
+        "Invalid name for mixin, must end with Base: $baseClassName",
         element: element,
       );
     }
