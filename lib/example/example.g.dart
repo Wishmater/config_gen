@@ -50,4 +50,21 @@ class ExampleConfig with ExampleConfigI, ExampleConfigBase {
       'fieldE': ExampleConfigBase._fieldE,
     },
   );
+
+  @override
+  String toString() {
+    return 'ExampleConfigfieldA = $fieldA, fieldB = $fieldB, fieldC = $fieldC, fieldD = $fieldD, fieldE = $fieldE';
+  }
+
+  @override
+  bool operator ==(covariant ExampleConfig other) {
+    return fieldA == other.fieldA &&
+        fieldB == other.fieldB &&
+        fieldC == other.fieldC &&
+        fieldD == other.fieldD &&
+        fieldE == other.fieldE;
+  }
+
+  @override
+  int get hashCode => Object.hashAll([fieldA, fieldB, fieldC, fieldD, fieldE]);
 }

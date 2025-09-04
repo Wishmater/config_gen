@@ -164,6 +164,27 @@ class ConfigGenerator extends GeneratorForAnnotation<Config> {
     }
     buffer.writeln("    },");
     buffer.writeln("  );");
+    buffer.writeln("");
+
+    // write toString method
+    buffer.writeln("  @override");
+    buffer.writeln("  String toString() {");
+    buffer.write("    return '$className");
+    buffer.write(fields.map((field) => "${field.name} = \$${field.name}").join(", "));
+    buffer.writeln("';");
+    buffer.writeln("  }");
+
+    // write equality operator
+    buffer.writeln("  @override");
+    buffer.writeln("  bool operator==(covariant $className other) {");
+    buffer.write("    return ");
+    buffer.write(fields.map((field) => "${field.name} == other.${field.name}").join(" && "));
+    buffer.writeln(";");
+    buffer.writeln("  }");
+
+    // write hashMethod
+    buffer.writeln("  @override");
+    buffer.writeln("  int get hashCode => Object.hashAll([${fields.map((field) => field.name).join(', ')}]);");
 
     buffer.writeln("}");
     return buffer.toString();
