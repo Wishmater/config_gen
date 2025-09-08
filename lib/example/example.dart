@@ -1,7 +1,7 @@
 import "package:config/config.dart";
 import "package:config_gen/config_gen.dart";
 
-part "example.g.dart";
+part "example.config.dart";
 
 @Config()
 mixin ExampleConfigBase on ExampleConfigI {

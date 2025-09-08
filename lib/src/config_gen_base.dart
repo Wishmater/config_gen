@@ -289,4 +289,4 @@ class FieldData {
   bool get isRequired => !nullable && defaultTo == null;
 }
 
-Builder configBuilder(BuilderOptions options) => PartBuilder([ConfigGenerator()], ".g.dart");
+Builder configBuilder(BuilderOptions options) => PartBuilder([ConfigGenerator()], ".config.dart");
