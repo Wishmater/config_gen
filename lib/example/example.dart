@@ -5,7 +5,9 @@ part "example.config.dart";
 
 @Config()
 mixin ExampleConfigBase on ExampleConfigI {
+  /// documenation comment for fieldA
   static const _fieldA = StringField();
+  /// documenation comment for fieldB
   static const _fieldB = DoubleNumberField();
   static const _fieldC = IntegerNumberField(defaultTo: 1);
   static const _fieldD = BooleanField(nullable: true);

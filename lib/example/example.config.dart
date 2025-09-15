@@ -8,7 +8,10 @@ part of 'example.dart';
 // **************************************************************************
 
 mixin ExampleConfigI {
+  /// documenation comment for fieldA
   String get fieldA;
+
+  /// documenation comment for fieldB
   double get fieldB;
   int get fieldC;
   bool? get fieldD;
@@ -16,10 +19,27 @@ mixin ExampleConfigI {
 }
 
 class ExampleConfig with ExampleConfigI, ExampleConfigBase {
+  static const TableSchema staticSchema = TableSchema(
+    fields: {
+      'fieldA': ExampleConfigBase._fieldA,
+      'fieldB': ExampleConfigBase._fieldB,
+      'fieldC': ExampleConfigBase._fieldC,
+      'fieldD': ExampleConfigBase._fieldD,
+      'fieldE': ExampleConfigBase._fieldE,
+    },
+  );
+
+  static TableSchema get schema => staticSchema;
+
+  @override
   final String fieldA;
+  @override
   final double fieldB;
+  @override
   final int fieldC;
+  @override
   final bool? fieldD;
+  @override
   final String? fieldE;
 
   ExampleConfig({
@@ -41,19 +61,9 @@ class ExampleConfig with ExampleConfigI, ExampleConfigBase {
     );
   }
 
-  static TableSchema get schema => TableSchema(
-    fields: {
-      'fieldA': ExampleConfigBase._fieldA,
-      'fieldB': ExampleConfigBase._fieldB,
-      'fieldC': ExampleConfigBase._fieldC,
-      'fieldD': ExampleConfigBase._fieldD,
-      'fieldE': ExampleConfigBase._fieldE,
-    },
-  );
-
   @override
   String toString() {
-    return 'ExampleConfigfieldA = $fieldA, fieldB = $fieldB, fieldC = $fieldC, fieldD = $fieldD, fieldE = $fieldE';
+    return 'ExampleConfig(fieldA = $fieldA, fieldB = $fieldB, fieldC = $fieldC, fieldD = $fieldD, fieldE = $fieldE)';
   }
 
   @override

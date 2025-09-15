@@ -74,12 +74,14 @@ class ConfigGenerator extends GeneratorForAnnotation<Config> {
         );
       }
       final name = originalName.substring(1);
+      final comment = e.documentationComment;
       fields.add(
         FieldData(
           name: name,
           nullable: nullable ?? false,
           defaultTo: defaultTo,
           resType: resType,
+          comment: comment,
         ),
       );
     }
@@ -89,6 +91,7 @@ class ConfigGenerator extends GeneratorForAnnotation<Config> {
     // generate abstract interface, to facilitate adding getters to user mixin
     buffer.writeln("mixin ${className}I {");
     for (final e in fields) {
+      if (e.comment != null) buffer.writeln("  ${e.comment}");
       buffer.writeln("  ${e.resType}${e.nullable ? '?' : ''} get ${e.name};");
     }
     buffer.writeln("}");
@@ -131,6 +134,7 @@ class ConfigGenerator extends GeneratorForAnnotation<Config> {
     // add field declarations
     buffer.writeln("");
     for (final e in fields) {
+      buffer.writeln("  @override");
       buffer.writeln("  final ${e.resType}${e.nullable ? '?' : ''} ${e.name};");
     }
 
@@ -210,9 +214,9 @@ class ConfigGenerator extends GeneratorForAnnotation<Config> {
     buffer.writeln("");
     buffer.writeln("  @override");
     buffer.writeln("  String toString() {");
-    buffer.write("    return '$className");
+    buffer.write("    return '$className(");
     buffer.write(fields.map((field) => "${field.name} = \$${field.name}").join(", "));
-    buffer.writeln("';");
+    buffer.writeln(")';");
     buffer.writeln("  }");
 
     // write equality operator
@@ -407,11 +411,13 @@ class FieldData {
   bool nullable;
   String? defaultTo;
   DartType? resType;
+  String? comment;
   FieldData({
     required this.name,
     required this.nullable,
     required this.defaultTo,
     required this.resType,
+    required this.comment,
   });
   bool get isRequired => !nullable && defaultTo == null;
 }

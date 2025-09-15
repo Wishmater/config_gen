@@ -4,4 +4,4 @@ builders:
     builder_factories: ["configBuilder"]
     auto_apply: root_package
     build_to: source
-    build_extensions: { ".dart": [".g.dart"] }
+    build_extensions: { ".dart": [".config.dart"] }
