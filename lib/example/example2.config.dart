@@ -1,13 +1,13 @@
 // dart format width=80
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'example.dart';
+part of 'example2.dart';
 
 // **************************************************************************
 // ConfigGenerator
 // **************************************************************************
 
-mixin ExampleConfigI {
+mixin Example2ConfigI {
   /// documenation comment for fieldA
   String get fieldA;
 
@@ -16,26 +16,16 @@ mixin ExampleConfigI {
   int get fieldC;
   bool? get fieldD;
   String? get fieldE;
-
-  /// Example 2 schema
-  Example2Config get example2;
-  Example2Config? get example3;
 }
 
-class ExampleConfig with ExampleConfigI, ExampleConfigBase {
+class Example2Config with Example2ConfigI, Example2ConfigBase {
   static const TableSchema staticSchema = TableSchema(
-    ignoreNotInSchema: true,
-    tables: {
-      'example2': ExampleConfigBase._example2,
-      'example3': ExampleConfigBase._example3,
-    },
-    canBeMissingSchemas: {'example3'},
     fields: {
-      'fieldA': ExampleConfigBase._fieldA,
-      'fieldB': ExampleConfigBase._fieldB,
-      'fieldC': ExampleConfigBase._fieldC,
-      'fieldD': ExampleConfigBase._fieldD,
-      'fieldE': ExampleConfigBase._fieldE,
+      'fieldA': Example2ConfigBase._fieldA,
+      'fieldB': Example2ConfigBase._fieldB,
+      'fieldC': Example2ConfigBase._fieldC,
+      'fieldD': Example2ConfigBase._fieldD,
+      'fieldE': Example2ConfigBase._fieldE,
     },
   );
 
@@ -52,39 +42,32 @@ class ExampleConfig with ExampleConfigI, ExampleConfigBase {
   @override
   final String? fieldE;
 
-  final Example2Config example2;
-  final Example2Config? example3;
-
-  ExampleConfig({
+  Example2Config({
     required this.fieldA,
     required this.fieldB,
     int? fieldC,
     this.fieldD,
     String? fieldE,
-    required this.example2,
-    this.example3,
   }) : fieldC = fieldC ?? 1,
        fieldE = fieldE ?? "def";
 
-  factory ExampleConfig.fromMap(Map<String, dynamic> map) {
-    return ExampleConfig(
+  factory Example2Config.fromMap(Map<String, dynamic> map) {
+    return Example2Config(
       fieldA: map['fieldA'],
       fieldB: map['fieldB'],
       fieldC: map['fieldC'],
       fieldD: map['fieldD'],
       fieldE: map['fieldE'],
-      example2: Example2Config.fromMap(map['example2']),
-      example3: Example2Config.fromMap(map['example3']),
     );
   }
 
   @override
   String toString() {
-    return 'ExampleConfig(fieldA = $fieldA, fieldB = $fieldB, fieldC = $fieldC, fieldD = $fieldD, fieldE = $fieldE)';
+    return 'Example2Config(fieldA = $fieldA, fieldB = $fieldB, fieldC = $fieldC, fieldD = $fieldD, fieldE = $fieldE)';
   }
 
   @override
-  bool operator ==(covariant ExampleConfig other) {
+  bool operator ==(covariant Example2Config other) {
     return fieldA == other.fieldA &&
         fieldB == other.fieldB &&
         fieldC == other.fieldC &&

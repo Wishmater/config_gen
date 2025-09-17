@@ -1,12 +1,16 @@
+import "dart:math";
+
 import "package:config/config.dart";
 import "package:config_gen/config_gen.dart";
+import "package:config_gen/example/example2.dart";
 
 part "example.config.dart";
 
-@Config()
+@Config(ignoreNotInSchema: true)
 mixin ExampleConfigBase on ExampleConfigI {
   /// documenation comment for fieldA
   static const _fieldA = StringField();
+
   /// documenation comment for fieldB
   static const _fieldB = DoubleNumberField();
   static const _fieldC = IntegerNumberField(defaultTo: 1);
@@ -14,52 +18,12 @@ mixin ExampleConfigBase on ExampleConfigI {
   static const _fieldE = StringField(defaultTo: "def", nullable: true);
   // TODO: 3 test custom values like EnumField
 
-  num get testGetter => fieldB + fieldC;
-}
+  num get testGetter => max(fieldB, fieldC);
 
-// // this is what should be generated
-//
-// mixin ExampleConfigI {
-//   String get fieldA;
-//   double get fieldB;
-//   int get fieldC;
-//   bool? get fieldD;
-//   String? get fieldE;
-// }
-//
-// @immutable
-// class ExampleConfig with ExampleConfigBase {
-//   final String fieldA;
-//   final double fieldB;
-//   final int fieldC;
-//   final bool? fieldD;
-//   final String? fieldE;
-//
-//   const ExampleConfig({
-//     required this.fieldA,
-//     required this.fieldB,
-//     this.fieldC = 1,
-//     required this.fieldD,
-//     this.fieldE = "def",
-//   });
-//
-//   factory ExampleConfig.fromMap(Map<String, dynamic> map) {
-//     return ExampleConfig(
-//       fieldA: map["fieldA"],
-//       fieldB: map["fieldB"],
-//       fieldC: map["fieldC"],
-//       fieldD: map["fieldD"],
-//       fieldE: map["fieldE"],
-//     );
-//   }
-//
-//   static const schema = TableSchema(
-//     fields: {
-//       "fieldA": ExampleConfigBase._fieldA,
-//       "fieldB": ExampleConfigBase._fieldB,
-//       "fieldC": ExampleConfigBase._fieldC,
-//       "fieldD": ExampleConfigBase._fieldD,
-//       "fieldE": ExampleConfigBase._fieldE,
-//     },
-//   );
-// }
+  @SchemaTable()
+  /// Example 2 schema
+  static const _example2 = Example2Config.staticSchema;
+
+  @SchemaTable(required: false)
+  static const _example3 = Example2Config.staticSchema;
+}

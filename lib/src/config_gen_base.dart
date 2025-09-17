@@ -1,3 +1,4 @@
+import "package:analyzer/dart/constant/value.dart";
 import "package:build/build.dart";
 import "package:config/config.dart";
 import "package:config_gen/src/annotations.dart";
@@ -6,6 +7,50 @@ import "package:analyzer/dart/element/element2.dart";
 import "package:analyzer/dart/element/type.dart";
 import "package:analyzer/dart/ast/ast.dart";
 import "package:analyzer/dart/ast/visitor.dart";
+
+class _SchemaTableGen {
+  final String name;
+
+  final bool required;
+
+  final String type;
+
+  final String? comment;
+
+  _SchemaTableGen(this.name, this.type, this.required, this.comment);
+
+  factory _SchemaTableGen.from(DartObject object, FieldElement2 field) {
+    String? type = object.getField("type")?.toTypeValue()?.element3?.name3;
+    if (type == null) {
+      final initializer = field.constantInitializer!.toSource();
+      // awful hack
+      type = initializer.substring(0, initializer.indexOf("."));
+    }
+    return _SchemaTableGen(
+      unprivate(field.name3!),
+      type,
+      object.getField("required")!.toBoolValue()!,
+      field.documentationComment,
+    );
+  }
+
+  static void writeMapSchemas(StringBuffer buffer, List<_SchemaTableGen> schemas, String baseClassName) {
+    buffer.writeln("{");
+    for (final schema in schemas) {
+      buffer.write("'${schema.name}': ");
+      buffer.writeln("$baseClassName._${schema.name},");
+    }
+    buffer.write("}");
+  }
+
+  static void writeCanBeMissingSchemas(StringBuffer buffer, List<_SchemaTableGen> schemas) {
+    buffer.writeln("{");
+    for (final schema in schemas) {
+      if (!schema.required)  buffer.writeln("'${schema.name}',");
+    }
+    buffer.write("}");
+  }
+}
 
 class ConfigGenerator extends GeneratorForAnnotation<Config> {
   @override
@@ -37,10 +82,13 @@ class ConfigGenerator extends GeneratorForAnnotation<Config> {
     final className = baseClassName.substring(0, baseClassName.length - 4);
 
     final fields = <FieldData>[];
+    final schemas = <_SchemaTableGen>[];
     // traverse fields and parse data needed to generate valid fields
     for (final e in element.fields2) {
+      final (isSchema, annotation) = isFieldAnnotatedWith(e, "$SchemaTable", _SchemaTableGen.from);
+
       final resType = getResType(e.type);
-      if (resType == null) {
+      if (resType == null && !isSchema) {
         continue;
       }
       if (!e.isStatic) {
@@ -61,11 +109,6 @@ class ConfigGenerator extends GeneratorForAnnotation<Config> {
           element: element,
         );
       }
-      final constant = e.computeConstantValue();
-      final constantReader = ConstantReader(constant);
-      // final defaultTo = constantReader.peek("defaultTo")?.objectValue;
-      final defaultTo = getDefaultToSource(e);
-      final nullable = constantReader.peek("nullable")?.boolValue;
       final originalName = e.name3!;
       if (!originalName.startsWith("_")) {
         throw InvalidGenerationSourceError(
@@ -74,6 +117,17 @@ class ConfigGenerator extends GeneratorForAnnotation<Config> {
         );
       }
       final name = originalName.substring(1);
+
+      if (isSchema) {
+        schemas.add(annotation!);
+        continue;
+      }
+
+      final constant = e.computeConstantValue();
+      final constantReader = ConstantReader(constant);
+      // final defaultTo = constantReader.peek("defaultTo")?.objectValue;
+      final defaultTo = getDefaultToSource(e);
+      final nullable = constantReader.peek("nullable")?.boolValue;
       final comment = e.documentationComment;
       fields.add(
         FieldData(
@@ -94,6 +148,10 @@ class ConfigGenerator extends GeneratorForAnnotation<Config> {
       if (e.comment != null) buffer.writeln("  ${e.comment}");
       buffer.writeln("  ${e.resType}${e.nullable ? '?' : ''} get ${e.name};");
     }
+    for (final e in schemas) {
+      if (e.comment != null) buffer.writeln("  ${e.comment}");
+      buffer.writeln("  ${e.type}${e.required ? '' : '?'} get ${e.name};");
+    }
     buffer.writeln("}");
 
     // generate concrete class
@@ -104,9 +162,16 @@ class ConfigGenerator extends GeneratorForAnnotation<Config> {
     // add static Schema
     buffer.writeln("");
     buffer.writeln("  static const TableSchema staticSchema = TableSchema(");
-    final staticSchemaTables = getStaticSchemaTables(element);
-    if (staticSchemaTables != null) {
-      buffer.writeln("    tables: $baseClassName._staticSchemaTables,");
+    if (annotation.read("ignoreNotInSchema").boolValue) {
+      buffer.writeln("    ignoreNotInSchema: true,");
+    }
+    if (schemas.isNotEmpty) {
+      buffer.write("    tables: ");
+      _SchemaTableGen.writeMapSchemas(buffer, schemas, baseClassName);
+      buffer.writeln(",");
+      buffer.write("    canBeMissingSchemas: ");
+      _SchemaTableGen.writeCanBeMissingSchemas(buffer, schemas);
+      buffer.writeln(",");
     }
     buffer.writeln("    fields: {");
     for (final e in fields) {
@@ -141,16 +206,17 @@ class ConfigGenerator extends GeneratorForAnnotation<Config> {
     // add static schema tables as independent variables
     final constructorExtra = StringBuffer();
     final fromMapExtra = StringBuffer();
-    if (staticSchemaTables != null && staticSchemaTables.isNotEmpty) {
+    if (schemas.isNotEmpty) {
       // TODO: 2 this assumes the resultType is autogenerated with config_gen as well.
       // If it isn't it will have a lot of issues. Maybe we could do some checks to
       // at least fail gracefully ot omit tables not generated with config_gen.
       buffer.writeln("");
-      for (final entry in staticSchemaTables) {
+      for (final entry in schemas) {
         final name = lowerFirst(entry.name);
-        buffer.writeln("  final ${entry.resultType} $name;");
-        constructorExtra.writeln("    required this.$name,");
-        fromMapExtra.writeln("      $name: ${entry.resultType}.fromMap(map['${entry.name}']),");
+        final type = entry.required ? entry.type : "${entry.type}?";
+        buffer.writeln("  final $type $name;");
+        constructorExtra.writeln("    ${entry.required ? 'required' : ''} this.$name,");
+        fromMapExtra.writeln("      $name: ${entry.type}.fromMap(map['${entry.name}']),");
       }
     }
 
@@ -247,7 +313,7 @@ class ConfigGenerator extends GeneratorForAnnotation<Config> {
     if (type.element3.name3 == "Field" && type.typeArguments.length == 2) {
       fieldType = type;
     } else {
-      for (var supertype in type.element3.allSupertypes) {
+      for (final supertype in type.element3.allSupertypes) {
         // log.warning(type.asInstanceOf2(supertype.element3));
         if (supertype.element3.name3 == "Field" && supertype.typeArguments.length == 2) {
           fieldType = type.asInstanceOf2(supertype.element3);
@@ -261,23 +327,6 @@ class ConfigGenerator extends GeneratorForAnnotation<Config> {
     // log.warning("${type} ${fieldType} ${fieldType.typeArguments} ${fieldType.element3}");
     // Return Res (second type argument)
     return fieldType.typeArguments[1];
-  }
-
-  // Extract the source of the defaultTo argument using AST
-  String? getDefaultToSource(FieldElement2 field) {
-    try {
-      // Get the compilation unit and parse the initializer
-      final visitor = DefaultToVisitor();
-      field.constantInitializer!.accept(visitor);
-      if (visitor.defaultToSource == null) {
-        // log.warning('No defaultTo argument found in initializer for field ${field.name3}');
-        return null;
-      }
-      return visitor.defaultToSource;
-    } catch (e) {
-      // log.warning('Error extracting defaultTo source for field ${field.name3}: $e');
-      return null;
-    }
   }
 
   bool hasGetSchemaTablesMethod(MixinElement2 classElement) {
@@ -298,40 +347,41 @@ class ConfigGenerator extends GeneratorForAnnotation<Config> {
     return true;
   }
 
-  List<TableSchemaData>? getStaticSchemaTables(MixinElement2 classElement) {
-    var field = classElement.getField2("_staticSchemaTables");
-    if (field == null) {
+  ({List<TableSchemaData> list, String name})? getStaticSchemaTables(MixinElement2 classElement) {
+    final fields = classElement.fields2.where((field) {
+      return field.metadata2.annotations.any((annot) {
+        return annot.element2?.displayName == "SchemaTables";
+      });
+    });
+    if (fields.isEmpty) {
+      return null;
+    }
+    final field = fields.first;
+    final name = field.name3;
+
+    if (name == null) {
       return null;
     }
     if (!field.isStatic) {
-      throw InvalidGenerationSourceError("_staticSchemaTables must be static", element: field);
+      throw InvalidGenerationSourceError("$name must be static", element: field);
     }
     if (!field.isConst) {
-      throw InvalidGenerationSourceError("_staticSchemaTables must be const", element: field);
+      throw InvalidGenerationSourceError("$name must be const", element: field);
+    }
+    if (!name.startsWith("_")) {
+      throw InvalidGenerationSourceError("$name must be private", element: field);
     }
     // ignore: deprecated_member_use // recommended in deprecation message doesn't work :))
     const tableSchemaTypeChecker = TypeChecker.fromRuntime(Map<String, TableSchema>);
     if (!tableSchemaTypeChecker.isExactlyType(field.type)) {
       throw InvalidGenerationSourceError(
-        "_staticSchemaTables must be of type Map<String, TableSchema>",
+        "$name must be of type Map<String, TableSchema>",
         element: field,
       );
     }
-    final visitor = StaticSchemaVisitor();
+    final visitor = StaticSchemaVisitor(name);
     field.constantInitializer!.accept(visitor);
-    return visitor.staticSchemaTables;
-    // return visitor.staticSchemaTables;
-    // final constValue = field.computeConstantValue();
-    // if (constValue == null) {
-    //   throw InvalidGenerationSourceError("Unable to read const value of _staticSchemaTables", element: field);
-    // }
-  }
-
-  String unprivate(String string) {
-    while (string.startsWith("_")) {
-      string = string.substring(1);
-    }
-    return string;
+    return (list: visitor.staticSchemaTables, name: name);
   }
 
   String lowerFirst(String str) {
@@ -359,23 +409,25 @@ class DefaultToVisitor extends SimpleAstVisitor<void> {
 // Visitor to find each key and assigned value of the map
 class StaticSchemaVisitor extends SimpleAstVisitor<void> {
   List<TableSchemaData> staticSchemaTables = [];
+  final String name;
+  StaticSchemaVisitor(this.name);
 
   @override
   void visitSetOrMapLiteral(SetOrMapLiteral node) {
     if (!node.isMap) {
-      throw InvalidGenerationSourceError("_staticSchemaTables initializer must be a map, not a set");
+      throw InvalidGenerationSourceError("$name initializer must be a map, not a set");
     }
     for (var element in node.elements) {
       if (element is MapLiteralEntry) {
         if (element.key is! StringLiteral) {
           throw InvalidGenerationSourceError(
-            "Key in _staticSchemaTables must be a String literal: ${element.key.toSource()}",
+            "Key in $name must be a String literal: ${element.key.toSource()}",
           );
         }
         final keyValue = (element.key as StringLiteral).stringValue;
         if (keyValue == null) {
           throw InvalidGenerationSourceError(
-            "Key in _staticSchemaTables must have a valid String value: ${element.key.toSource()}",
+            "Key in $name must have a valid String value: ${element.key.toSource()}",
           );
         }
         final initializer = element.value.toSource();
@@ -423,3 +475,37 @@ class FieldData {
 }
 
 Builder configBuilder(BuilderOptions options) => PartBuilder([ConfigGenerator()], ".config.dart");
+
+(bool, T?) isFieldAnnotatedWith<T>(FieldElement2 field, String name, T Function(DartObject, FieldElement2) transform) {
+  final index = field.metadata2.annotations.indexWhere((annot) => annot.element2?.displayName == name);
+  final isAnnotated = index != -1;
+  if (isAnnotated) {
+    final object = field.metadata2.annotations[index].computeConstantValue()!;
+    return (isAnnotated, transform(object, field));
+  }
+  return (isAnnotated, null);
+}
+
+// Extract the source of the defaultTo argument using AST
+String? getDefaultToSource(FieldElement2 field) {
+  try {
+    // Get the compilation unit and parse the initializer
+    final visitor = DefaultToVisitor();
+    field.constantInitializer!.accept(visitor);
+    if (visitor.defaultToSource == null) {
+      // log.warning('No defaultTo argument found in initializer for field ${field.name3}');
+      return null;
+    }
+    return visitor.defaultToSource;
+  } catch (e) {
+    // log.warning('Error extracting defaultTo source for field ${field.name3}: $e');
+    return null;
+  }
+}
+
+String unprivate(String string) {
+  while (string.startsWith("_")) {
+    string = string.substring(1);
+  }
+  return string;
+}
