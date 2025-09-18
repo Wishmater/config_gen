@@ -46,7 +46,7 @@ class _SchemaTableGen {
   static void writeCanBeMissingSchemas(StringBuffer buffer, List<_SchemaTableGen> schemas) {
     buffer.writeln("{");
     for (final schema in schemas) {
-      if (!schema.required)  buffer.writeln("'${schema.name}',");
+      if (!schema.required) buffer.writeln("'${schema.name}',");
     }
     buffer.write("}");
   }
@@ -214,6 +214,7 @@ class ConfigGenerator extends GeneratorForAnnotation<Config> {
       for (final entry in schemas) {
         final name = lowerFirst(entry.name);
         final type = entry.required ? entry.type : "${entry.type}?";
+        buffer.writeln("  @override");
         buffer.writeln("  final $type $name;");
         constructorExtra.writeln("    ${entry.required ? 'required' : ''} this.$name,");
         fromMapExtra.writeln("      $name: ${entry.type}.fromMap(map['${entry.name}']),");
@@ -281,7 +282,9 @@ class ConfigGenerator extends GeneratorForAnnotation<Config> {
     buffer.writeln("  @override");
     buffer.writeln("  String toString() {");
     buffer.write("    return '$className(");
-    buffer.write(fields.map((field) => "${field.name} = \$${field.name}").join(", "));
+    buffer.write(
+      [...fields.map((e) => e.name), ...schemas.map((e) => e.name)].map((name) => "$name = \$$name").join(", "),
+    );
     buffer.writeln(")';");
     buffer.writeln("  }");
 
@@ -290,14 +293,18 @@ class ConfigGenerator extends GeneratorForAnnotation<Config> {
     buffer.writeln("  @override");
     buffer.writeln("  bool operator==(covariant $className other) {");
     buffer.write("    return ");
-    buffer.write(fields.map((field) => "${field.name} == other.${field.name}").join(" && "));
+    buffer.write(
+      [...fields.map((e) => e.name), ...schemas.map((e) => e.name)].map((name) => "$name == other.$name").join(" && "),
+    );
     buffer.writeln(";");
     buffer.writeln("  }");
 
     // write hashMethod
     buffer.writeln("");
     buffer.writeln("  @override");
-    buffer.writeln("  int get hashCode => Object.hashAll([${fields.map((field) => field.name).join(', ')}]);");
+    buffer.writeln(
+      "  int get hashCode => Object.hashAll([${[...fields.map((e) => e.name), ...schemas.map((e) => e.name)].join(', ')}]);",
+    );
 
     buffer.writeln("}");
     return buffer.toString();

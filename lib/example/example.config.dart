@@ -52,7 +52,9 @@ class ExampleConfig with ExampleConfigI, ExampleConfigBase {
   @override
   final String? fieldE;
 
+  @override
   final Example2Config example2;
+  @override
   final Example2Config? example3;
 
   ExampleConfig({
@@ -80,7 +82,7 @@ class ExampleConfig with ExampleConfigI, ExampleConfigBase {
 
   @override
   String toString() {
-    return 'ExampleConfig(fieldA = $fieldA, fieldB = $fieldB, fieldC = $fieldC, fieldD = $fieldD, fieldE = $fieldE)';
+    return 'ExampleConfig(fieldA = $fieldA, fieldB = $fieldB, fieldC = $fieldC, fieldD = $fieldD, fieldE = $fieldE, example2 = $example2, example3 = $example3)';
   }
 
   @override
@@ -89,9 +91,19 @@ class ExampleConfig with ExampleConfigI, ExampleConfigBase {
         fieldB == other.fieldB &&
         fieldC == other.fieldC &&
         fieldD == other.fieldD &&
-        fieldE == other.fieldE;
+        fieldE == other.fieldE &&
+        example2 == other.example2 &&
+        example3 == other.example3;
   }
 
   @override
-  int get hashCode => Object.hashAll([fieldA, fieldB, fieldC, fieldD, fieldE]);
+  int get hashCode => Object.hashAll([
+    fieldA,
+    fieldB,
+    fieldC,
+    fieldD,
+    fieldE,
+    example2,
+    example3,
+  ]);
 }
