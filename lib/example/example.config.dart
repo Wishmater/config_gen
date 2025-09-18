@@ -93,8 +93,12 @@ class ExampleConfig with ExampleConfigI, ExampleConfigBase {
       fieldD: map['fieldD'],
       fieldE: map['fieldE'],
       example2: Example2Config.fromMap(map['example2']),
-      example3: Example2Config.fromMap(map['example3']),
-      example4: Example2Config.fromMap(map['example4']),
+      example3: map['example3'] != null
+          ? Example2Config.fromMap(map['example3'])
+          : null,
+      example4: map['Example4'] != null
+          ? Example2Config.fromMap(map['Example4'])
+          : null,
     );
   }
 

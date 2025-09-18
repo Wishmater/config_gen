@@ -127,7 +127,7 @@ class ConfigGenerator extends GeneratorForAnnotation<Config> {
       buffer.writeln(",");
     }
     if (hasValidatorMethod(element)) {
-       buffer.writeln("    validator: $baseClassName._validator,");
+      buffer.writeln("    validator: $baseClassName._validator,");
     }
     buffer.writeln("    fields: {");
     for (final e in fields) {
@@ -171,12 +171,17 @@ class ConfigGenerator extends GeneratorForAnnotation<Config> {
       // at least fail gracefully ot omit tables not generated with config_gen.
       buffer.writeln("");
       for (final entry in schemas) {
-        final name = entry.fieldName;
+        final fieldName = entry.fieldName;
+        final schemaName = entry.schemaName;
         final type = entry.required ? entry.type : "${entry.type}?";
         buffer.writeln("  @override");
-        buffer.writeln("  final $type $name;");
-        constructorExtra.writeln("    ${entry.required ? 'required' : ''} this.$name,");
-        fromMapExtra.writeln("      $name: ${entry.type}.fromMap(map['$name']),");
+        buffer.writeln("  final $type $fieldName;");
+        constructorExtra.writeln("    ${entry.required ? 'required' : ''} this.$fieldName,");
+        if (entry.required) {
+          fromMapExtra.writeln("      $fieldName: ${entry.type}.fromMap(map['$schemaName']),");
+        } else {
+          fromMapExtra.writeln("      $fieldName: map['$schemaName'] != null ? ${entry.type}.fromMap(map['$schemaName']) : null,");
+        }
       }
     }
 
@@ -253,7 +258,10 @@ class ConfigGenerator extends GeneratorForAnnotation<Config> {
     buffer.writeln("  bool operator==(covariant $className other) {");
     buffer.write("    return ");
     buffer.write(
-      [...fields.map((e) => e.name), ...schemas.map((e) => e.fieldName)].map((name) => "$name == other.$name").join(" && "),
+      [
+        ...fields.map((e) => e.name),
+        ...schemas.map((e) => e.fieldName),
+      ].map((name) => "$name == other.$name").join(" && "),
     );
     buffer.writeln(";");
     buffer.writeln("  }");
