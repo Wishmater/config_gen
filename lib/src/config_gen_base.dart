@@ -1,70 +1,9 @@
-import "package:analyzer/dart/constant/value.dart";
 import "package:build/build.dart";
 import "package:config_gen/src/annotations.dart";
 import "package:config_gen/src/utils.dart";
 import "package:source_gen/source_gen.dart";
 import "package:analyzer/dart/element/element2.dart";
 import "package:analyzer/dart/element/type.dart";
-
-class _FieldData {
-  String name;
-  bool nullable;
-  String? defaultTo;
-  DartType? resType;
-  String? comment;
-  _FieldData({
-    required this.name,
-    required this.nullable,
-    required this.defaultTo,
-    required this.resType,
-    required this.comment,
-  });
-  bool get isRequired => !nullable && defaultTo == null;
-}
-
-class _SchemaTableGen {
-  final String name;
-
-  final bool required;
-
-  final String type;
-
-  final String? comment;
-
-  _SchemaTableGen(this.name, this.type, this.required, this.comment);
-
-  factory _SchemaTableGen.from(DartObject object, FieldElement2 field) {
-    String? type = object.getField("type")?.toTypeValue()?.element3?.name3;
-    if (type == null) {
-      final initializer = field.constantInitializer!.toSource();
-      // awful hack
-      type = initializer.substring(0, initializer.indexOf("."));
-    }
-    return _SchemaTableGen(
-      unprivate(field.name3!),
-      type,
-      object.getField("required")!.toBoolValue()!,
-      field.documentationComment,
-    );
-  }
-
-  static void writeMapSchemas(StringBuffer buffer, List<_SchemaTableGen> schemas, String baseClassName) {
-    buffer.writeln("{");
-    for (final schema in schemas) {
-      buffer.write("'${schema.name}': ");
-      buffer.writeln("$baseClassName._${schema.name},");
-    }
-    buffer.write("}");
-  }
-
-  static void writeCanBeMissingSchemas(StringBuffer buffer, List<_SchemaTableGen> schemas) {
-    buffer.writeln("{");
-    for (final schema in schemas) {
-      if (!schema.required) buffer.writeln("'${schema.name}',");
-    }
-    buffer.write("}");
-  }
-}
 
 class ConfigGenerator extends GeneratorForAnnotation<Config> {
   @override
@@ -95,11 +34,11 @@ class ConfigGenerator extends GeneratorForAnnotation<Config> {
     }
     final className = baseClassName.substring(0, baseClassName.length - 4);
 
-    final fields = <_FieldData>[];
-    final schemas = <_SchemaTableGen>[];
+    final fields = <FieldData>[];
+    final schemas = <SchemaTableGen>[];
     // traverse fields and parse data needed to generate valid fields
     for (final e in element.fields2) {
-      final (isSchema, annotation) = isFieldAnnotatedWith(e, "$SchemaTable", _SchemaTableGen.from);
+      final (isSchema, annotation) = isFieldAnnotatedWith(e, "$SchemaFieldAnnot", SchemaTableGen.from);
 
       final resType = getResType(e.type);
       if (resType == null && !isSchema) {
@@ -144,7 +83,7 @@ class ConfigGenerator extends GeneratorForAnnotation<Config> {
       final nullable = constantReader.peek("nullable")?.boolValue;
       final comment = e.documentationComment;
       fields.add(
-        _FieldData(
+        FieldData(
           name: name,
           nullable: nullable ?? false,
           defaultTo: defaultTo,
@@ -164,7 +103,7 @@ class ConfigGenerator extends GeneratorForAnnotation<Config> {
     }
     for (final e in schemas) {
       if (e.comment != null) buffer.writeln("  ${e.comment}");
-      buffer.writeln("  ${e.type}${e.required ? '' : '?'} get ${e.name};");
+      buffer.writeln("  ${e.type}${e.required ? '' : '?'} get ${e.fieldName};");
     }
     buffer.writeln("}");
 
@@ -181,10 +120,10 @@ class ConfigGenerator extends GeneratorForAnnotation<Config> {
     }
     if (schemas.isNotEmpty) {
       buffer.write("    tables: ");
-      _SchemaTableGen.writeMapSchemas(buffer, schemas, baseClassName);
+      SchemaTableGen.writeMapSchemas(buffer, schemas, baseClassName);
       buffer.writeln(",");
       buffer.write("    canBeMissingSchemas: ");
-      _SchemaTableGen.writeCanBeMissingSchemas(buffer, schemas);
+      SchemaTableGen.writeCanBeMissingSchemas(buffer, schemas);
       buffer.writeln(",");
     }
     if (hasValidatorMethod(element)) {
@@ -232,12 +171,12 @@ class ConfigGenerator extends GeneratorForAnnotation<Config> {
       // at least fail gracefully ot omit tables not generated with config_gen.
       buffer.writeln("");
       for (final entry in schemas) {
-        final name = lowerFirst(entry.name);
+        final name = entry.fieldName;
         final type = entry.required ? entry.type : "${entry.type}?";
         buffer.writeln("  @override");
         buffer.writeln("  final $type $name;");
         constructorExtra.writeln("    ${entry.required ? 'required' : ''} this.$name,");
-        fromMapExtra.writeln("      $name: ${entry.type}.fromMap(map['${entry.name}']),");
+        fromMapExtra.writeln("      $name: ${entry.type}.fromMap(map['$name']),");
       }
     }
 
@@ -303,7 +242,7 @@ class ConfigGenerator extends GeneratorForAnnotation<Config> {
     buffer.writeln("  String toString() {");
     buffer.write("    return '$className(");
     buffer.write(
-      [...fields.map((e) => e.name), ...schemas.map((e) => e.name)].map((name) => "$name = \$$name").join(", "),
+      [...fields.map((e) => e.name), ...schemas.map((e) => e.fieldName)].map((name) => "$name = \$$name").join(", "),
     );
     buffer.writeln(")';");
     buffer.writeln("  }");
@@ -314,7 +253,7 @@ class ConfigGenerator extends GeneratorForAnnotation<Config> {
     buffer.writeln("  bool operator==(covariant $className other) {");
     buffer.write("    return ");
     buffer.write(
-      [...fields.map((e) => e.name), ...schemas.map((e) => e.name)].map((name) => "$name == other.$name").join(" && "),
+      [...fields.map((e) => e.name), ...schemas.map((e) => e.fieldName)].map((name) => "$name == other.$name").join(" && "),
     );
     buffer.writeln(";");
     buffer.writeln("  }");
@@ -323,7 +262,7 @@ class ConfigGenerator extends GeneratorForAnnotation<Config> {
     buffer.writeln("");
     buffer.writeln("  @override");
     buffer.writeln(
-      "  int get hashCode => Object.hashAll([${[...fields.map((e) => e.name), ...schemas.map((e) => e.name)].join(', ')}]);",
+      "  int get hashCode => Object.hashAll([${[...fields.map((e) => e.name), ...schemas.map((e) => e.fieldName)].join(', ')}]);",
     );
 
     buffer.writeln("}");

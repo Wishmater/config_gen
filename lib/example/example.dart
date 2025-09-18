@@ -20,12 +20,16 @@ mixin ExampleConfigBase on ExampleConfigI {
 
   num get testGetter => max(fieldB, fieldC);
 
-  @SchemaTable()
+  @SchemaFieldAnnot()
   /// Example 2 schema
   static const _example2 = Example2Config.staticSchema;
 
-  @SchemaTable(required: false)
+  @SchemaFieldAnnot(required: false)
   static const _example3 = Example2Config.staticSchema;
+
+  @SchemaFieldAnnot(required: false)
+  /// Example 3 schema
+  static const _Example4   = Example2Config.staticSchema;
 
   static void _validator(Map<String, dynamic> values, List<EvaluationError> errors) {}
 

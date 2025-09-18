@@ -89,3 +89,67 @@ String unprivate(String string) {
   }
   return string;
 }
+
+
+class FieldData {
+  String name;
+  bool nullable;
+  String? defaultTo;
+  DartType? resType;
+  String? comment;
+  FieldData({
+    required this.name,
+    required this.nullable,
+    required this.defaultTo,
+    required this.resType,
+    required this.comment,
+  });
+  bool get isRequired => !nullable && defaultTo == null;
+}
+
+class SchemaTableGen {
+  final String _name;
+
+  String get fieldName => lowerFirst(_name);
+  String get schemaName => _name;
+
+  final bool required;
+
+  final String type;
+
+  final String? comment;
+
+  SchemaTableGen(this._name, this.type, this.required, this.comment);
+
+  factory SchemaTableGen.from(DartObject object, FieldElement2 field) {
+    String? type = object.getField("type")?.toTypeValue()?.element3?.name3;
+    if (type == null) {
+      final initializer = field.constantInitializer!.toSource();
+      // awful hack
+      type = initializer.substring(0, initializer.indexOf("."));
+    }
+    return SchemaTableGen(
+      unprivate(field.name3!),
+      type,
+      object.getField("required")!.toBoolValue()!,
+      field.documentationComment,
+    );
+  }
+
+  static void writeMapSchemas(StringBuffer buffer, List<SchemaTableGen> schemas, String baseClassName) {
+    buffer.writeln("{");
+    for (final schema in schemas) {
+      buffer.write("'${schema._name}': ");
+      buffer.writeln("$baseClassName._${schema._name},");
+    }
+    buffer.write("}");
+  }
+
+  static void writeCanBeMissingSchemas(StringBuffer buffer, List<SchemaTableGen> schemas) {
+    buffer.writeln("{");
+    for (final schema in schemas) {
+      if (!schema.required) buffer.writeln("'${schema._name}',");
+    }
+    buffer.write("}");
+  }
+}

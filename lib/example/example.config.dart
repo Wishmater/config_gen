@@ -20,6 +20,9 @@ mixin ExampleConfigI {
   /// Example 2 schema
   Example2Config get example2;
   Example2Config? get example3;
+
+  /// Example 3 schema
+  Example2Config? get example4;
 }
 
 class ExampleConfig with ExampleConfigI, ExampleConfigBase {
@@ -28,8 +31,9 @@ class ExampleConfig with ExampleConfigI, ExampleConfigBase {
     tables: {
       'example2': ExampleConfigBase._example2,
       'example3': ExampleConfigBase._example3,
+      'Example4': ExampleConfigBase._Example4,
     },
-    canBeMissingSchemas: {'example3'},
+    canBeMissingSchemas: {'example3', 'Example4'},
     validator: ExampleConfigBase._validator,
     fields: {
       'fieldA': ExampleConfigBase._fieldA,
@@ -66,6 +70,8 @@ class ExampleConfig with ExampleConfigI, ExampleConfigBase {
   final Example2Config example2;
   @override
   final Example2Config? example3;
+  @override
+  final Example2Config? example4;
 
   ExampleConfig({
     required this.fieldA,
@@ -75,6 +81,7 @@ class ExampleConfig with ExampleConfigI, ExampleConfigBase {
     String? fieldE,
     required this.example2,
     this.example3,
+    this.example4,
   }) : fieldC = fieldC ?? 1,
        fieldE = fieldE ?? "def";
 
@@ -87,12 +94,13 @@ class ExampleConfig with ExampleConfigI, ExampleConfigBase {
       fieldE: map['fieldE'],
       example2: Example2Config.fromMap(map['example2']),
       example3: Example2Config.fromMap(map['example3']),
+      example4: Example2Config.fromMap(map['example4']),
     );
   }
 
   @override
   String toString() {
-    return 'ExampleConfig(fieldA = $fieldA, fieldB = $fieldB, fieldC = $fieldC, fieldD = $fieldD, fieldE = $fieldE, example2 = $example2, example3 = $example3)';
+    return 'ExampleConfig(fieldA = $fieldA, fieldB = $fieldB, fieldC = $fieldC, fieldD = $fieldD, fieldE = $fieldE, example2 = $example2, example3 = $example3, example4 = $example4)';
   }
 
   @override
@@ -103,7 +111,8 @@ class ExampleConfig with ExampleConfigI, ExampleConfigBase {
         fieldD == other.fieldD &&
         fieldE == other.fieldE &&
         example2 == other.example2 &&
-        example3 == other.example3;
+        example3 == other.example3 &&
+        example4 == other.example4;
   }
 
   @override
@@ -115,5 +124,6 @@ class ExampleConfig with ExampleConfigI, ExampleConfigBase {
     fieldE,
     example2,
     example3,
+    example4,
   ]);
 }
