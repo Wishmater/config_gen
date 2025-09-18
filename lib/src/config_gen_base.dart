@@ -1,6 +1,5 @@
 import "package:analyzer/dart/constant/value.dart";
 import "package:build/build.dart";
-import "package:config/config.dart";
 import "package:config_gen/src/annotations.dart";
 import "package:source_gen/source_gen.dart";
 import "package:analyzer/dart/element/element2.dart";
@@ -354,43 +353,6 @@ class ConfigGenerator extends GeneratorForAnnotation<Config> {
     return true;
   }
 
-  ({List<TableSchemaData> list, String name})? getStaticSchemaTables(MixinElement2 classElement) {
-    final fields = classElement.fields2.where((field) {
-      return field.metadata2.annotations.any((annot) {
-        return annot.element2?.displayName == "SchemaTables";
-      });
-    });
-    if (fields.isEmpty) {
-      return null;
-    }
-    final field = fields.first;
-    final name = field.name3;
-
-    if (name == null) {
-      return null;
-    }
-    if (!field.isStatic) {
-      throw InvalidGenerationSourceError("$name must be static", element: field);
-    }
-    if (!field.isConst) {
-      throw InvalidGenerationSourceError("$name must be const", element: field);
-    }
-    if (!name.startsWith("_")) {
-      throw InvalidGenerationSourceError("$name must be private", element: field);
-    }
-    // ignore: deprecated_member_use // recommended in deprecation message doesn't work :))
-    const tableSchemaTypeChecker = TypeChecker.fromRuntime(Map<String, TableSchema>);
-    if (!tableSchemaTypeChecker.isExactlyType(field.type)) {
-      throw InvalidGenerationSourceError(
-        "$name must be of type Map<String, TableSchema>",
-        element: field,
-      );
-    }
-    final visitor = StaticSchemaVisitor(name);
-    field.constantInitializer!.accept(visitor);
-    return (list: visitor.staticSchemaTables, name: name);
-  }
-
   String lowerFirst(String str) {
     if (str.isEmpty) return str;
     return str[0].toLowerCase() + str.substring(1);
@@ -408,47 +370,6 @@ class DefaultToVisitor extends SimpleAstVisitor<void> {
       if (argument is NamedExpression && argument.name.label.name == "defaultTo") {
         defaultToSource = argument.expression.toSource();
         break;
-      }
-    }
-  }
-}
-
-// Visitor to find each key and assigned value of the map
-class StaticSchemaVisitor extends SimpleAstVisitor<void> {
-  List<TableSchemaData> staticSchemaTables = [];
-  final String name;
-  StaticSchemaVisitor(this.name);
-
-  @override
-  void visitSetOrMapLiteral(SetOrMapLiteral node) {
-    if (!node.isMap) {
-      throw InvalidGenerationSourceError("$name initializer must be a map, not a set");
-    }
-    for (var element in node.elements) {
-      if (element is MapLiteralEntry) {
-        if (element.key is! StringLiteral) {
-          throw InvalidGenerationSourceError(
-            "Key in $name must be a String literal: ${element.key.toSource()}",
-          );
-        }
-        final keyValue = (element.key as StringLiteral).stringValue;
-        if (keyValue == null) {
-          throw InvalidGenerationSourceError(
-            "Key in $name must have a valid String value: ${element.key.toSource()}",
-          );
-        }
-        final initializer = element.value.toSource();
-        // awful hack
-        final resultType = initializer.substring(0, initializer.indexOf("."));
-        staticSchemaTables.add(
-          TableSchemaData(
-            name: keyValue,
-            initializer: initializer,
-            resultType: resultType,
-          ),
-        );
-      } else {
-        throw InvalidGenerationSourceError("Unexpected element type in map: ${element.runtimeType}");
       }
     }
   }
