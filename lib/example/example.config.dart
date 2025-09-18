@@ -30,6 +30,7 @@ class ExampleConfig with ExampleConfigI, ExampleConfigBase {
       'example3': ExampleConfigBase._example3,
     },
     canBeMissingSchemas: {'example3'},
+    validator: ExampleConfigBase._validator,
     fields: {
       'fieldA': ExampleConfigBase._fieldA,
       'fieldB': ExampleConfigBase._fieldB,
@@ -39,7 +40,16 @@ class ExampleConfig with ExampleConfigI, ExampleConfigBase {
     },
   );
 
-  static TableSchema get schema => staticSchema;
+  static TableSchema get schema => TableSchema(
+    tables: {
+      ...staticSchema.tables,
+      ...ExampleConfigBase._getDynamicSchemaTables(),
+    },
+    fields: staticSchema.fields,
+    validator: staticSchema.validator,
+    ignoreNotInSchema: staticSchema.ignoreNotInSchema,
+    canBeMissingSchemas: staticSchema.canBeMissingSchemas,
+  );
 
   @override
   final String fieldA;

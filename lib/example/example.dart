@@ -26,4 +26,10 @@ mixin ExampleConfigBase on ExampleConfigI {
 
   @SchemaTable(required: false)
   static const _example3 = Example2Config.staticSchema;
+
+  static void _validator(Map<String, dynamic> values, List<EvaluationError> errors) {}
+
+  static Map<String, TableSchema> _getDynamicSchemaTables() => {
+
+  };
 }
