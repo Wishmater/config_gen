@@ -1,0 +1,18 @@
+fieldA = "Lore Ipsum"
+fieldB = 2
+fieldE = "Lore Ipsum but with more"
+
+example2 {
+    fieldA = "Some other Lore"
+    fieldB = 2.5
+}
+
+example3 {
+    fieldA = "Some other Lore"
+    fieldB = 2.5
+}
+
+Example4 {
+    fieldA = "Some other Lore"
+    fieldB = 2.5
+}

@@ -9,8 +9,11 @@ class Config {
 /// Mark field to be generated as a nested schema instead of a field
 class SchemaFieldAnnot {
   final bool required;
+
+  final bool allowMultiple;
+
   /// use this if the declaration is not in the form of XXXConfig.staticSchema
   final Type? type;
 
-  const SchemaFieldAnnot({this.type, this.required = true});
+  const SchemaFieldAnnot({this.type, this.required = true, this.allowMultiple = false});
 }
