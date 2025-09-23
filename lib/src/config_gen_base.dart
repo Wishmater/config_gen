@@ -150,7 +150,9 @@ class ConfigGenerator extends GeneratorForAnnotation<Config> {
       buffer.writeln("    fields: staticSchema.fields,");
       buffer.writeln("    validator: staticSchema.validator,");
       buffer.writeln("    ignoreNotInSchema: staticSchema.ignoreNotInSchema,");
-      buffer.writeln("    canBeMissingSchemas: Set.from([...staticSchema.canBeMissingSchemas, ...ExampleConfigBase._getDynamicSchemaTables().keys]),");
+      buffer.writeln(
+        "    canBeMissingSchemas: <String>{...staticSchema.canBeMissingSchemas, ...ExampleConfigBase._getDynamicSchemaTables().keys},",
+      );
       buffer.writeln("  );");
       buffer.writeln("");
 
@@ -289,10 +291,13 @@ class ConfigGenerator extends GeneratorForAnnotation<Config> {
     buffer.writeln("");
     buffer.writeln("  @override");
     buffer.write("  int get hashCode => Object.hashAll([");
-    buffer.write([...fields.map((e) => e.name), ...schemas.map((e) => e.fieldName)].join(", "));
-    if (hasDynamicSchema) {
-      buffer.write(", dynamicSchemas");
-    }
+    buffer.write(
+      [
+        ...fields.map((e) => e.name),
+        ...schemas.map((e) => e.fieldName),
+        if (hasDynamicSchema) "dynamicSchemas",
+      ].join(", "),
+    );
     buffer.writeln("]);");
 
     buffer.writeln("}");

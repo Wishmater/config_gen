@@ -55,10 +55,10 @@ class ExampleConfig extends ConfigBaseI with ExampleConfigI, ExampleConfigBase {
     fields: staticSchema.fields,
     validator: staticSchema.validator,
     ignoreNotInSchema: staticSchema.ignoreNotInSchema,
-    canBeMissingSchemas: Set.from([
+    canBeMissingSchemas: <String>{
       ...staticSchema.canBeMissingSchemas,
       ...ExampleConfigBase._getDynamicSchemaTables().keys,
-    ]),
+    },
   );
 
   @override
@@ -169,4 +169,65 @@ class ExampleConfig extends ConfigBaseI with ExampleConfigI, ExampleConfigBase {
     example4,
     dynamicSchemas,
   ]);
+}
+
+mixin EmptyExampleConfigI {
+  Map<String, List<Object>> get dynamicSchemas;
+}
+
+class EmptyExampleConfig extends ConfigBaseI
+    with EmptyExampleConfigI, EmptyExampleConfigBase {
+  static const TableSchema staticSchema = TableSchema(fields: {});
+
+  static TableSchema get schema => TableSchema(
+    tables: {
+      ...staticSchema.tables,
+      ...EmptyExampleConfigBase._getDynamicSchemaTables().map(
+        (k, v) => MapEntry(k, v.schema),
+      ),
+    },
+    fields: staticSchema.fields,
+    validator: staticSchema.validator,
+    ignoreNotInSchema: staticSchema.ignoreNotInSchema,
+    canBeMissingSchemas: <String>{
+      ...staticSchema.canBeMissingSchemas,
+      ...ExampleConfigBase._getDynamicSchemaTables().keys,
+    },
+  );
+
+  @override
+  final Map<String, List<Object>> dynamicSchemas;
+
+  EmptyExampleConfig({required this.dynamicSchemas});
+
+  factory EmptyExampleConfig.fromMap(Map<String, dynamic> map) {
+    final dynamicSchemas = <String, List<Object>>{};
+    final schemas = ExampleConfigBase._getDynamicSchemaTables();
+    for (final entry in schemas.entries) {
+      if (map[entry.key] == null) continue;
+      for (final e in map[entry.key]) {
+        if (dynamicSchemas[entry.key] == null) {
+          dynamicSchemas[entry.key] = [];
+        }
+        dynamicSchemas[entry.key]!.add(entry.value.from(e));
+      }
+    }
+
+    return EmptyExampleConfig(dynamicSchemas: dynamicSchemas);
+  }
+
+  @override
+  String toString() {
+    return '''EmptyExampleConfig(
+	dynamicSchemas = ${dynamicSchemas.toString().split("\n").join("\n\t")}
+)''';
+  }
+
+  @override
+  bool operator ==(covariant EmptyExampleConfig other) {
+    return configMapEqual(dynamicSchemas, other.dynamicSchemas);
+  }
+
+  @override
+  int get hashCode => Object.hashAll([dynamicSchemas]);
 }
