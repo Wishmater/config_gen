@@ -150,7 +150,7 @@ class ConfigGenerator extends GeneratorForAnnotation<Config> {
       buffer.writeln("    fields: staticSchema.fields,");
       buffer.writeln("    validator: staticSchema.validator,");
       buffer.writeln("    ignoreNotInSchema: staticSchema.ignoreNotInSchema,");
-      buffer.writeln("    canBeMissingSchemas: staticSchema.canBeMissingSchemas,");
+      buffer.writeln("    canBeMissingSchemas: Set.from([...staticSchema.canBeMissingSchemas, ...ExampleConfigBase._getDynamicSchemaTables().keys]),");
       buffer.writeln("  );");
       buffer.writeln("");
 
@@ -229,6 +229,7 @@ class ConfigGenerator extends GeneratorForAnnotation<Config> {
         final dynamicSchemas = <String, List<Object>>{};
         final schemas = ExampleConfigBase._getDynamicSchemaTables();
         for (final entry in schemas.entries) {
+          if (map[entry.key] == null) continue;
           for (final e in map[entry.key]) {
             if (dynamicSchemas[entry.key] == null) {
               dynamicSchemas[entry.key] = [];

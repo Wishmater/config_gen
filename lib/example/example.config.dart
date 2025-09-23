@@ -55,7 +55,10 @@ class ExampleConfig extends ConfigBaseI with ExampleConfigI, ExampleConfigBase {
     fields: staticSchema.fields,
     validator: staticSchema.validator,
     ignoreNotInSchema: staticSchema.ignoreNotInSchema,
-    canBeMissingSchemas: staticSchema.canBeMissingSchemas,
+    canBeMissingSchemas: Set.from([
+      ...staticSchema.canBeMissingSchemas,
+      ...ExampleConfigBase._getDynamicSchemaTables().keys,
+    ]),
   );
 
   @override
@@ -96,6 +99,7 @@ class ExampleConfig extends ConfigBaseI with ExampleConfigI, ExampleConfigBase {
     final dynamicSchemas = <String, List<Object>>{};
     final schemas = ExampleConfigBase._getDynamicSchemaTables();
     for (final entry in schemas.entries) {
+      if (map[entry.key] == null) continue;
       for (final e in map[entry.key]) {
         if (dynamicSchemas[entry.key] == null) {
           dynamicSchemas[entry.key] = [];
