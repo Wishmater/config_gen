@@ -14,9 +14,14 @@ bool hasGetSchemaTablesMethod(MixinElement2 classElement) {
     return false;
   }
   final typeArgs = returnType.typeArguments;
-  if (typeArgs.length != 2 ||
-      typeArgs[0].getDisplayString() != "String" ||
-      (typeArgs[1].getDisplayString() != "TableSchema" && typeArgs[1].getDisplayString() != "Schema")) {
+  if (typeArgs.length != 2 || typeArgs[0].getDisplayString() != "String" || typeArgs[1] is! RecordType) {
+    return false;
+  }
+  final namedFields = (typeArgs[1] as RecordType).namedFields;
+  if (namedFields.length != 2 ||
+      (namedFields[0].name != "from" &&
+          namedFields[0].type.getDisplayString() != "Object Function(Map<String, dynamic>)") ||
+      (namedFields[1].name != "schema" && namedFields[1].type.getDisplayString() != "TableSchema")) {
     return false;
   }
   return true;
@@ -131,7 +136,8 @@ class SchemaTableGen {
     required this.required,
     required this.comment,
     required this.multiple,
-  }) : _name = name, _type = type;
+  }) : _name = name,
+       _type = type;
 
   factory SchemaTableGen.from(DartObject object, FieldElement2 field) {
     String? type = object.getField("type")?.toTypeValue()?.element3?.name3;

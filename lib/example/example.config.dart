@@ -23,9 +23,10 @@ mixin ExampleConfigI {
 
   /// Example 3 schema
   List<Example2Config>? get example4;
+  Map<String, List<Object>> get dynamicSchemas;
 }
 
-class ExampleConfig with ExampleConfigI, ExampleConfigBase {
+class ExampleConfig extends ConfigBaseI with ExampleConfigI, ExampleConfigBase {
   static const TableSchema staticSchema = TableSchema(
     ignoreNotInSchema: true,
     tables: {
@@ -47,13 +48,18 @@ class ExampleConfig with ExampleConfigI, ExampleConfigBase {
   static TableSchema get schema => TableSchema(
     tables: {
       ...staticSchema.tables,
-      ...ExampleConfigBase._getDynamicSchemaTables(),
+      ...ExampleConfigBase._getDynamicSchemaTables().map(
+        (k, v) => MapEntry(k, v.schema),
+      ),
     },
     fields: staticSchema.fields,
     validator: staticSchema.validator,
     ignoreNotInSchema: staticSchema.ignoreNotInSchema,
     canBeMissingSchemas: staticSchema.canBeMissingSchemas,
   );
+
+  @override
+  final Map<String, List<Object>> dynamicSchemas;
 
   @override
   final String fieldA;
@@ -82,11 +88,24 @@ class ExampleConfig with ExampleConfigI, ExampleConfigBase {
     required this.example2,
     this.example3,
     this.example4,
+    required this.dynamicSchemas,
   }) : fieldC = fieldC ?? 1,
        fieldE = fieldE ?? "def";
 
   factory ExampleConfig.fromMap(Map<String, dynamic> map) {
+    final dynamicSchemas = <String, List<Object>>{};
+    final schemas = ExampleConfigBase._getDynamicSchemaTables();
+    for (final entry in schemas.entries) {
+      for (final e in map[entry.key]) {
+        if (dynamicSchemas[entry.key] == null) {
+          dynamicSchemas[entry.key] = [];
+        }
+        dynamicSchemas[entry.key]!.add(entry.value.from(e));
+      }
+    }
+
     return ExampleConfig(
+      dynamicSchemas: dynamicSchemas,
       fieldA: map['fieldA'],
       fieldB: map['fieldB'],
       fieldC: map['fieldC'],
@@ -108,7 +127,17 @@ class ExampleConfig with ExampleConfigI, ExampleConfigBase {
 
   @override
   String toString() {
-    return 'ExampleConfig(fieldA = $fieldA, fieldB = $fieldB, fieldC = $fieldC, fieldD = $fieldD, fieldE = $fieldE, example2 = $example2, example3 = $example3, example4 = $example4)';
+    return '''ExampleConfig(
+	fieldA = $fieldA,
+	fieldB = $fieldB,
+	fieldC = $fieldC,
+	fieldD = $fieldD,
+	fieldE = $fieldE,
+	example2 = ${example2.toString().split("\n").join("\n\t")},
+	example3 = ${example3.toString().split("\n").join("\n\t")},
+	example4 = ${example4.toString().split("\n").join("\n\t")},
+	dynamicSchemas = ${dynamicSchemas.toString().split("\n").join("\n\t")}
+)''';
   }
 
   @override
@@ -120,7 +149,8 @@ class ExampleConfig with ExampleConfigI, ExampleConfigBase {
         fieldE == other.fieldE &&
         example2 == other.example2 &&
         example3 == other.example3 &&
-        configListEqual(example4, other.example4);
+        configListEqual(example4, other.example4) &&
+        configMapEqual(dynamicSchemas, other.dynamicSchemas);
   }
 
   @override
@@ -133,5 +163,6 @@ class ExampleConfig with ExampleConfigI, ExampleConfigBase {
     example2,
     example3,
     example4,
+    dynamicSchemas,
   ]);
 }

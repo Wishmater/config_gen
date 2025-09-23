@@ -16,12 +16,24 @@ void main() {
 
     switch (result) {
       case EvaluationParseError():
-        fail("$result");
+        fail("${result.errors}");
       case EvaluationValidationError():
-        fail("$result");
+        fail("${result.errors}");
       case EvaluationSuccess():
         final actual = ExampleConfig.fromMap(result.values);
         final expected = ExampleConfig(
+          dynamicSchemas: {
+            "Example5": [
+              Example2Config(
+                fieldA: "Some other Lore2",
+                fieldB: 2.5,
+              ),
+              Example2Config(
+                fieldA: "Some other Lore2",
+                fieldB: 2.5,
+              ),
+            ],
+          },
           fieldA: "Lore Ipsum",
           fieldB: 2,
           fieldE: "Lore Ipsum but with more",

@@ -18,7 +18,8 @@ mixin Example2ConfigI {
   String? get fieldE;
 }
 
-class Example2Config with Example2ConfigI, Example2ConfigBase {
+class Example2Config extends ConfigBaseI
+    with Example2ConfigI, Example2ConfigBase {
   static const TableSchema staticSchema = TableSchema(
     fields: {
       'fieldA': Example2ConfigBase._fieldA,
@@ -63,7 +64,13 @@ class Example2Config with Example2ConfigI, Example2ConfigBase {
 
   @override
   String toString() {
-    return 'Example2Config(fieldA = $fieldA, fieldB = $fieldB, fieldC = $fieldC, fieldD = $fieldD, fieldE = $fieldE)';
+    return '''Example2Config(
+	fieldA = $fieldA,
+	fieldB = $fieldB,
+	fieldC = $fieldC,
+	fieldD = $fieldD,
+	fieldE = $fieldE
+)''';
   }
 
   @override

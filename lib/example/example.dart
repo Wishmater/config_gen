@@ -29,11 +29,11 @@ mixin ExampleConfigBase on ExampleConfigI {
 
   /// Example 3 schema
   @SchemaFieldAnnot(required: false, allowMultiple: true)
-  static const _Example4   = Example2Config.staticSchema;
+  static const _Example4 = Example2Config.staticSchema;
 
   static void _validator(Map<String, dynamic> values, List<EvaluationError> errors) {}
 
-  static Map<String, TableSchema> _getDynamicSchemaTables() => {
-
+  static Map<String, ({TableSchema schema, Object Function(Map<String, dynamic> aso) from})> _getDynamicSchemaTables() => {
+    "Example5": (schema: Example2Config.staticSchema, from: Example2Config.fromMap),
   };
 }

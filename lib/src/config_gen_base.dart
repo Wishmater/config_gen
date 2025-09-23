@@ -93,8 +93,9 @@ class ConfigGenerator extends GeneratorForAnnotation<Config> {
       );
     }
 
+    final hasDynamicSchema = hasGetSchemaTablesMethod(element);
+
     final buffer = StringBuffer();
-    buffer.writeln("");
 
     // generate abstract interface, to facilitate adding getters to user mixin
     buffer.writeln("mixin ${className}I {");
@@ -103,12 +104,15 @@ class ConfigGenerator extends GeneratorForAnnotation<Config> {
       buffer.writeln("  ${e.resType}${e.nullable ? '?' : ''} get ${e.name};");
     }
     SchemaTableGen.writeGetterSchemas(buffer, schemas);
+    if (hasDynamicSchema) {
+      buffer.writeln("Map<String, List<Object>> get dynamicSchemas;");
+    }
     buffer.writeln("}");
 
     // generate concrete class
     buffer.writeln();
     // buffer.writeln("@immutable");
-    buffer.writeln("class $className with ${className}I, $baseClassName {");
+    buffer.writeln("class $className extends ConfigBaseI with ${className}I, $baseClassName {");
 
     // add static Schema
     buffer.writeln("");
@@ -137,11 +141,11 @@ class ConfigGenerator extends GeneratorForAnnotation<Config> {
 
     // add schema
     buffer.writeln("");
-    if (hasGetSchemaTablesMethod(element)) {
+    if (hasDynamicSchema) {
       buffer.writeln("  static TableSchema get schema => TableSchema(");
       buffer.writeln("    tables: {");
       buffer.writeln("      ...staticSchema.tables,");
-      buffer.writeln("      ...$baseClassName._getDynamicSchemaTables(),");
+      buffer.writeln("      ...$baseClassName._getDynamicSchemaTables().map((k, v) => MapEntry(k, v.schema)),");
       buffer.writeln("    },");
       buffer.writeln("    fields: staticSchema.fields,");
       buffer.writeln("    validator: staticSchema.validator,");
@@ -149,6 +153,9 @@ class ConfigGenerator extends GeneratorForAnnotation<Config> {
       buffer.writeln("    canBeMissingSchemas: staticSchema.canBeMissingSchemas,");
       buffer.writeln("  );");
       buffer.writeln("");
+
+      buffer.writeln("@override");
+      buffer.writeln("final Map<String, List<Object>> dynamicSchemas;");
     } else {
       buffer.writeln("  static TableSchema get schema => staticSchema;");
     }
@@ -187,6 +194,9 @@ class ConfigGenerator extends GeneratorForAnnotation<Config> {
       }
     }
     SchemaTableGen.writeConstructorParameterSchemas(buffer, schemas);
+    if (hasDynamicSchema) {
+      buffer.writeln("required this.dynamicSchemas,");
+    }
 
     if (hasDefaultTos) {
       // This hack is needed because default values in constructors must be const, which causes issues with custom
@@ -214,7 +224,24 @@ class ConfigGenerator extends GeneratorForAnnotation<Config> {
     // add fromMap
     buffer.writeln("");
     buffer.writeln("  factory $className.fromMap(Map<String, dynamic> map) {");
+    if (hasDynamicSchema) {
+      buffer.writeln("""
+        final dynamicSchemas = <String, List<Object>>{};
+        final schemas = ExampleConfigBase._getDynamicSchemaTables();
+        for (final entry in schemas.entries) {
+          for (final e in map[entry.key]) {
+            if (dynamicSchemas[entry.key] == null) {
+              dynamicSchemas[entry.key] = [];
+            }
+            dynamicSchemas[entry.key]!.add(entry.value.from(e));
+          }
+        }
+        """);
+    }
     buffer.writeln("    return $className(");
+    if (hasDynamicSchema) {
+      buffer.writeln("      dynamicSchemas: dynamicSchemas,");
+    }
     for (final e in fields) {
       buffer.writeln("      ${unprivate(e.name)}: map['${unprivate(e.name)}'],");
     }
@@ -226,11 +253,16 @@ class ConfigGenerator extends GeneratorForAnnotation<Config> {
     buffer.writeln("");
     buffer.writeln("  @override");
     buffer.writeln("  String toString() {");
-    buffer.write("    return '$className(");
+    buffer.write("    return '''$className(\n\t");
     buffer.write(
-      [...fields.map((e) => e.name), ...schemas.map((e) => e.fieldName)].map((name) => "$name = \$$name").join(", "),
+      [
+        ...fields.map((e) => "${e.name} = \$${e.name}"),
+        ...schemas.map((e) => "${e.fieldName} = \${${e.fieldName}.toString().split(\"\\n\").join(\"\\n\\t\")}"),
+        if (hasDynamicSchema) "dynamicSchemas = \${dynamicSchemas.toString().split(\"\\n\").join(\"\\n\\t\")}",
+      ].join(",\n\t"),
     );
-    buffer.writeln(")';");
+    buffer.writeln("");
+    buffer.writeln(")''';");
     buffer.writeln("  }");
 
     // write equality operator
@@ -242,7 +274,11 @@ class ConfigGenerator extends GeneratorForAnnotation<Config> {
       [
         ...fields.map((e) => e.name).map((name) => "$name == other.$name"),
         ...schemas.where((e) => !e.multiple).map((e) => e.fieldName).map((name) => "$name == other.$name"),
-        ...schemas.where((e) => e.multiple).map((e) => e.fieldName).map((name) => "configListEqual($name, other.$name)"),
+        ...schemas
+            .where((e) => e.multiple)
+            .map((e) => e.fieldName)
+            .map((name) => "configListEqual($name, other.$name)"),
+        if (hasDynamicSchema) "configMapEqual(dynamicSchemas, other.dynamicSchemas)",
       ].join(" && "),
     );
     buffer.writeln(";");
@@ -251,9 +287,12 @@ class ConfigGenerator extends GeneratorForAnnotation<Config> {
     // write hashMethod
     buffer.writeln("");
     buffer.writeln("  @override");
-    buffer.writeln(
-      "  int get hashCode => Object.hashAll([${[...fields.map((e) => e.name), ...schemas.map((e) => e.fieldName)].join(', ')}]);",
-    );
+    buffer.write("  int get hashCode => Object.hashAll([");
+    buffer.write([...fields.map((e) => e.name), ...schemas.map((e) => e.fieldName)].join(", "));
+    if (hasDynamicSchema) {
+      buffer.write(", dynamicSchemas");
+    }
+    buffer.writeln("]);");
 
     buffer.writeln("}");
     return buffer.toString();

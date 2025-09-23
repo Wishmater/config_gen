@@ -21,3 +21,13 @@ Example4 {
     fieldA = "Some other Lore2"
     fieldB = 2.5
 }
+
+Example5  {
+    fieldA = "Some other Lore2"
+    fieldB = 2.5
+}
+
+Example5 {
+    fieldA = "Some other Lore2"
+    fieldB = 2.5
+}
