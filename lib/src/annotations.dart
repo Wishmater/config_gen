@@ -3,7 +3,11 @@ class Config {
   /// If this is true then KeyNotInSchemaError will not be emited
   final bool ignoreNotInSchema;
 
-  const Config({this.ignoreNotInSchema = false});
+  /// If this is true schemas declared in _getDynamicSchemaTables will not be added to
+  /// canBeMissingSchemas field in the Schema declaration
+  final bool requireStaticSchema;
+
+  const Config({this.ignoreNotInSchema = false, this.requireStaticSchema = false});
 }
 
 /// Mark field to be generated as a nested schema instead of a field

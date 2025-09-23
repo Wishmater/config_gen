@@ -92,7 +92,7 @@ class ExampleConfig extends ConfigBaseI with ExampleConfigI, ExampleConfigBase {
     this.example3,
     this.example4,
     required this.dynamicSchemas,
-  }) : fieldC = fieldC ?? 1,
+  }) : fieldC = fieldC ?? null ?? (sas ? 1 : 2),
        fieldE = fieldE ?? "def";
 
   factory ExampleConfig.fromMap(Map<String, dynamic> map) {
@@ -189,10 +189,7 @@ class EmptyExampleConfig extends ConfigBaseI
     fields: staticSchema.fields,
     validator: staticSchema.validator,
     ignoreNotInSchema: staticSchema.ignoreNotInSchema,
-    canBeMissingSchemas: <String>{
-      ...staticSchema.canBeMissingSchemas,
-      ...EmptyExampleConfigBase._getDynamicSchemaTables().keys,
-    },
+    canBeMissingSchemas: staticSchema.canBeMissingSchemas,
   );
 
   @override
@@ -202,7 +199,7 @@ class EmptyExampleConfig extends ConfigBaseI
 
   factory EmptyExampleConfig.fromMap(Map<String, dynamic> map) {
     final dynamicSchemas = <String, List<Object>>{};
-    final schemas = ExampleConfigBase._getDynamicSchemaTables();
+    final schemas = EmptyExampleConfigBase._getDynamicSchemaTables();
     for (final entry in schemas.entries) {
       if (map[entry.key] == null) continue;
       for (final e in map[entry.key]) {

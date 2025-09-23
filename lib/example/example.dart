@@ -6,6 +6,8 @@ import "package:config_gen/example/example2.dart";
 
 part "example.config.dart";
 
+const sas = false;
+
 @Config(ignoreNotInSchema: true)
 mixin ExampleConfigBase on ExampleConfigI {
   /// documenation comment for fieldA
@@ -13,7 +15,7 @@ mixin ExampleConfigBase on ExampleConfigI {
 
   /// documenation comment for fieldB
   static const _fieldB = DoubleNumberField();
-  static const _fieldC = IntegerNumberField(defaultTo: 1);
+  static const _fieldC = IntegerNumberField(defaultTo: null ?? (sas ? 1 : 2));
   static const _fieldD = BooleanField(nullable: true);
   static const _fieldE = StringField(defaultTo: "def", nullable: true);
   // TODO: 3 test custom values like EnumField
@@ -39,7 +41,7 @@ mixin ExampleConfigBase on ExampleConfigI {
   };
 }
 
-@Config()
+@Config(requireStaticSchema: true)
 mixin EmptyExampleConfigBase {
   static Map<String, ({TableSchema schema, dynamic Function(Map<String, dynamic>) from})> _getDynamicSchemaTables() => {
     "Example5": (schema: Example2Config.staticSchema, from: Example2Config.fromMap),
