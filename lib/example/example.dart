@@ -27,8 +27,8 @@ mixin ExampleConfigBase on ExampleConfigI {
   @SchemaFieldAnnot(required: false)
   static const _example3 = Example2Config.staticSchema;
 
-  @SchemaFieldAnnot(required: false)
   /// Example 3 schema
+  @SchemaFieldAnnot(required: false, allowMultiple: true)
   static const _Example4   = Example2Config.staticSchema;
 
   static void _validator(Map<String, dynamic> values, List<EvaluationError> errors) {}

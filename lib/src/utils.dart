@@ -38,7 +38,6 @@ String lowerFirst(String str) {
   return str[0].toLowerCase() + str.substring(1);
 }
 
-
 (bool, T?) isFieldAnnotatedWith<T>(FieldElement2 field, String name, T Function(DartObject, FieldElement2) transform) {
   final index = field.metadata2.annotations.indexWhere((annot) => annot.element2?.displayName == name);
   final isAnnotated = index != -1;
@@ -48,7 +47,6 @@ String lowerFirst(String str) {
   }
   return (isAnnotated, null);
 }
-
 
 // Visitor to find the defaultTo argument
 class DefaultToVisitor extends SimpleAstVisitor<void> {
@@ -90,7 +88,6 @@ String unprivate(String string) {
   return string;
 }
 
-
 class FieldData {
   String name;
   bool nullable;
@@ -115,11 +112,26 @@ class SchemaTableGen {
 
   final bool required;
 
-  final String type;
+  final bool multiple;
+
+  final String _type;
+  String get type {
+    if (multiple) {
+      return "List<$_type>";
+    } else {
+      return _type;
+    }
+  }
 
   final String? comment;
 
-  SchemaTableGen(this._name, this.type, this.required, this.comment);
+  SchemaTableGen({
+    required String name,
+    required String type,
+    required this.required,
+    required this.comment,
+    required this.multiple,
+  }) : _name = name, _type = type;
 
   factory SchemaTableGen.from(DartObject object, FieldElement2 field) {
     String? type = object.getField("type")?.toTypeValue()?.element3?.name3;
@@ -129,11 +141,65 @@ class SchemaTableGen {
       type = initializer.substring(0, initializer.indexOf("."));
     }
     return SchemaTableGen(
-      unprivate(field.name3!),
-      type,
-      object.getField("required")!.toBoolValue()!,
-      field.documentationComment,
+      type: type,
+      name: unprivate(field.name3!),
+      comment: field.documentationComment,
+      required: object.getField("required")!.toBoolValue()!,
+      multiple: object.getField("allowMultiple")!.toBoolValue()!,
     );
+  }
+
+  void writeConstructorParameter(StringBuffer constructor) {
+    constructor.writeln("    ${required ? 'required' : ''} this.$fieldName,");
+  }
+
+  void writeFromMapParameter(StringBuffer buffer) {
+    // List<Example2Config>.of((map['Example4'] as List<Map<String, dynamic>>).map(Example2Config.fromMap))
+    String from;
+    if (multiple) {
+      from = "$type.of((map['$schemaName'] as List<Map<String, dynamic>>).map($_type.fromMap))";
+    } else {
+      from = "$type.fromMap(map['$schemaName'][0])";
+    }
+    if (required) {
+      buffer.writeln("$fieldName: $from,");
+    } else {
+      buffer.writeln("$fieldName: map['$schemaName'] != null ? $from : null,");
+    }
+  }
+
+  void writeField(StringBuffer buffer) {
+    buffer.writeln("  @override");
+    buffer.writeln("  final $type${required ? '' : '?'} $fieldName;");
+  }
+
+  void writeGetter(StringBuffer buffer) {
+    if (comment != null) buffer.writeln("  $comment");
+    buffer.writeln("  $type${required ? '' : '?'} get $fieldName;");
+  }
+
+  static void writeFromMapParameterSchemas(StringBuffer buffer, List<SchemaTableGen> schemas) {
+    for (final schema in schemas) {
+      schema.writeFromMapParameter(buffer);
+    }
+  }
+
+  static void writeConstructorParameterSchemas(StringBuffer constructor, List<SchemaTableGen> schemas) {
+    for (final schema in schemas) {
+      schema.writeConstructorParameter(constructor);
+    }
+  }
+
+  static void writeFieldsSchemas(StringBuffer buffer, List<SchemaTableGen> schemas) {
+    for (final schema in schemas) {
+      schema.writeField(buffer);
+    }
+  }
+
+  static void writeGetterSchemas(StringBuffer buffer, List<SchemaTableGen> schemas) {
+    for (final schema in schemas) {
+      schema.writeGetter(buffer);
+    }
   }
 
   static void writeMapSchemas(StringBuffer buffer, List<SchemaTableGen> schemas, String baseClassName) {

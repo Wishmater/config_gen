@@ -22,7 +22,7 @@ mixin ExampleConfigI {
   Example2Config? get example3;
 
   /// Example 3 schema
-  Example2Config? get example4;
+  List<Example2Config>? get example4;
 }
 
 class ExampleConfig with ExampleConfigI, ExampleConfigBase {
@@ -71,7 +71,7 @@ class ExampleConfig with ExampleConfigI, ExampleConfigBase {
   @override
   final Example2Config? example3;
   @override
-  final Example2Config? example4;
+  final List<Example2Config>? example4;
 
   ExampleConfig({
     required this.fieldA,
@@ -92,12 +92,16 @@ class ExampleConfig with ExampleConfigI, ExampleConfigBase {
       fieldC: map['fieldC'],
       fieldD: map['fieldD'],
       fieldE: map['fieldE'],
-      example2: Example2Config.fromMap(map['example2']),
+      example2: Example2Config.fromMap(map['example2'][0]),
       example3: map['example3'] != null
-          ? Example2Config.fromMap(map['example3'])
+          ? Example2Config.fromMap(map['example3'][0])
           : null,
       example4: map['Example4'] != null
-          ? Example2Config.fromMap(map['Example4'])
+          ? List<Example2Config>.of(
+              (map['Example4'] as List<Map<String, dynamic>>).map(
+                Example2Config.fromMap,
+              ),
+            )
           : null,
     );
   }
@@ -116,7 +120,7 @@ class ExampleConfig with ExampleConfigI, ExampleConfigBase {
         fieldE == other.fieldE &&
         example2 == other.example2 &&
         example3 == other.example3 &&
-        example4 == other.example4;
+        configListEqual(example4, other.example4);
   }
 
   @override

@@ -20,8 +20,8 @@ void main() {
       case EvaluationValidationError():
         fail("$result");
       case EvaluationSuccess():
-        final example = ExampleConfig.fromMap(result.values);
-        expect(example, equals(ExampleConfig(
+        final actual = ExampleConfig.fromMap(result.values);
+        final expected = ExampleConfig(
           fieldA: "Lore Ipsum",
           fieldB: 2,
           fieldE: "Lore Ipsum but with more",
@@ -33,12 +33,23 @@ void main() {
             fieldA: "Some other Lore",
             fieldB: 2.5,
           ),
-          example4: Example2Config(
-            fieldA: "Some other Lore",
-            fieldB: 2.5,
+          example4: [
+            Example2Config(
+              fieldA: "Some other Lore",
+              fieldB: 2.5,
+            ),
+            Example2Config(
+              fieldA: "Some other Lore2",
+              fieldB: 2.5,
+            ),
+          ],
+        );
+        expect(
+          actual,
+          equals(
+            expected,
           ),
-        )));
+        );
     }
-    //
   });
 }
