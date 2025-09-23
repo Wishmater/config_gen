@@ -33,7 +33,7 @@ mixin ExampleConfigBase on ExampleConfigI {
 
   static void _validator(Map<String, dynamic> values, List<EvaluationError> errors) {}
 
-  static Map<String, ({TableSchema schema, Object Function(Map<String, dynamic> aso) from})> _getDynamicSchemaTables() => {
+  static Map<String, ({TableSchema schema, dynamic Function(Map<String, dynamic> aso) from})> _getDynamicSchemaTables() => {
     "Example5": (schema: Example2Config.staticSchema, from: Example2Config.fromMap),
   };
 }

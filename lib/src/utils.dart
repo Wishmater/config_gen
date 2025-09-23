@@ -19,9 +19,9 @@ bool hasGetSchemaTablesMethod(MixinElement2 classElement) {
   }
   final namedFields = (typeArgs[1] as RecordType).namedFields;
   if (namedFields.length != 2 ||
-      (namedFields[0].name != "from" &&
-          namedFields[0].type.getDisplayString() != "Object Function(Map<String, dynamic>)") ||
-      (namedFields[1].name != "schema" && namedFields[1].type.getDisplayString() != "TableSchema")) {
+      (namedFields[0].name != "from" ||
+          namedFields[0].type.getDisplayString() != "dynamic Function(Map<String, dynamic>)") ||
+      (namedFields[1].name != "schema" || namedFields[1].type.getDisplayString() != "TableSchema")) {
     return false;
   }
   return true;
