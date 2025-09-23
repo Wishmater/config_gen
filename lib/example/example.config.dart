@@ -191,7 +191,7 @@ class EmptyExampleConfig extends ConfigBaseI
     ignoreNotInSchema: staticSchema.ignoreNotInSchema,
     canBeMissingSchemas: <String>{
       ...staticSchema.canBeMissingSchemas,
-      ...ExampleConfigBase._getDynamicSchemaTables().keys,
+      ...EmptyExampleConfigBase._getDynamicSchemaTables().keys,
     },
   );
 

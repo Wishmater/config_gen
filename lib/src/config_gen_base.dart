@@ -151,7 +151,7 @@ class ConfigGenerator extends GeneratorForAnnotation<Config> {
       buffer.writeln("    validator: staticSchema.validator,");
       buffer.writeln("    ignoreNotInSchema: staticSchema.ignoreNotInSchema,");
       buffer.writeln(
-        "    canBeMissingSchemas: <String>{...staticSchema.canBeMissingSchemas, ...ExampleConfigBase._getDynamicSchemaTables().keys},",
+        "    canBeMissingSchemas: <String>{...staticSchema.canBeMissingSchemas, ...$baseClassName._getDynamicSchemaTables().keys},",
       );
       buffer.writeln("  );");
       buffer.writeln("");
