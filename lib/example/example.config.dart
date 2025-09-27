@@ -23,13 +23,13 @@ mixin ExampleConfigI {
 
   /// Example 3 schema
   List<Example2Config>? get example4;
-  Map<String, List<Object>> get dynamicSchemas;
+  List<(String, Object)> get dynamicSchemas;
 }
 
 class ExampleConfig extends ConfigBaseI with ExampleConfigI, ExampleConfigBase {
-  static const TableSchema staticSchema = TableSchema(
+  static const BlockSchema staticSchema = BlockSchema(
     ignoreNotInSchema: true,
-    tables: {
+    blocks: {
       'example2': ExampleConfigBase._example2,
       'example3': ExampleConfigBase._example3,
       'Example4': ExampleConfigBase._Example4,
@@ -45,9 +45,9 @@ class ExampleConfig extends ConfigBaseI with ExampleConfigI, ExampleConfigBase {
     },
   );
 
-  static TableSchema get schema => TableSchema(
-    tables: {
-      ...staticSchema.tables,
+  static BlockSchema get schema => BlockSchema(
+    blocks: {
+      ...staticSchema.blocks,
       ...ExampleConfigBase._getDynamicSchemaTables().map(
         (k, v) => MapEntry(k, v.schema),
       ),
@@ -62,7 +62,7 @@ class ExampleConfig extends ConfigBaseI with ExampleConfigI, ExampleConfigBase {
   );
 
   @override
-  final Map<String, List<Object>> dynamicSchemas;
+  final List<(String, Object)> dynamicSchemas;
 
   @override
   final String fieldA;
@@ -95,35 +95,34 @@ class ExampleConfig extends ConfigBaseI with ExampleConfigI, ExampleConfigBase {
   }) : fieldC = fieldC ?? null ?? (sas ? 1 : 2),
        fieldE = fieldE ?? "def";
 
-  factory ExampleConfig.fromMap(Map<String, dynamic> map) {
-    final dynamicSchemas = <String, List<Object>>{};
+  factory ExampleConfig.fromBlock(BlockData data) {
+    Map<String, dynamic> fields = data.fields;
+
+    final dynamicSchemas = <(String, Object)>[];
     final schemas = ExampleConfigBase._getDynamicSchemaTables();
-    for (final entry in schemas.entries) {
-      if (map[entry.key] == null) continue;
-      for (final e in map[entry.key]) {
-        if (dynamicSchemas[entry.key] == null) {
-          dynamicSchemas[entry.key] = [];
-        }
-        dynamicSchemas[entry.key]!.add(entry.value.from(e));
+
+    for (final block in data.blocks) {
+      final key = block.$1;
+      if (!schemas.containsKey(key)) {
+        continue;
       }
+      dynamicSchemas.add((key, schemas[key]!.from(block.$2)));
     }
 
     return ExampleConfig(
       dynamicSchemas: dynamicSchemas,
-      fieldA: map['fieldA'],
-      fieldB: map['fieldB'],
-      fieldC: map['fieldC'],
-      fieldD: map['fieldD'],
-      fieldE: map['fieldE'],
-      example2: Example2Config.fromMap(map['example2'][0]),
-      example3: map['example3'] != null
-          ? Example2Config.fromMap(map['example3'][0])
+      fieldA: fields['fieldA'],
+      fieldB: fields['fieldB'],
+      fieldC: fields['fieldC'],
+      fieldD: fields['fieldD'],
+      fieldE: fields['fieldE'],
+      example2: Example2Config.fromBlock(data.firstBlockWith('example2')!),
+      example3: data.blockContainsKey('example3')
+          ? Example2Config.fromBlock(data.firstBlockWith('example3')!)
           : null,
-      example4: map['Example4'] != null
+      example4: data.blockContainsKey('Example4')
           ? List<Example2Config>.of(
-              (map['Example4'] as List<Map<String, dynamic>>).map(
-                Example2Config.fromMap,
-              ),
+              data.blocksWith('Example4').map(Example2Config.fromBlock),
             )
           : null,
     );
@@ -154,7 +153,7 @@ class ExampleConfig extends ConfigBaseI with ExampleConfigI, ExampleConfigBase {
         example2 == other.example2 &&
         example3 == other.example3 &&
         configListEqual(example4, other.example4) &&
-        configMapEqual(dynamicSchemas, other.dynamicSchemas);
+        configListEqual(dynamicSchemas, other.dynamicSchemas);
   }
 
   @override
@@ -172,16 +171,16 @@ class ExampleConfig extends ConfigBaseI with ExampleConfigI, ExampleConfigBase {
 }
 
 mixin EmptyExampleConfigI {
-  Map<String, List<Object>> get dynamicSchemas;
+  List<(String, Object)> get dynamicSchemas;
 }
 
 class EmptyExampleConfig extends ConfigBaseI
     with EmptyExampleConfigI, EmptyExampleConfigBase {
-  static const TableSchema staticSchema = TableSchema(fields: {});
+  static const BlockSchema staticSchema = BlockSchema(fields: {});
 
-  static TableSchema get schema => TableSchema(
-    tables: {
-      ...staticSchema.tables,
+  static BlockSchema get schema => BlockSchema(
+    blocks: {
+      ...staticSchema.blocks,
       ...EmptyExampleConfigBase._getDynamicSchemaTables().map(
         (k, v) => MapEntry(k, v.schema),
       ),
@@ -193,21 +192,22 @@ class EmptyExampleConfig extends ConfigBaseI
   );
 
   @override
-  final Map<String, List<Object>> dynamicSchemas;
+  final List<(String, Object)> dynamicSchemas;
 
   EmptyExampleConfig({required this.dynamicSchemas});
 
-  factory EmptyExampleConfig.fromMap(Map<String, dynamic> map) {
-    final dynamicSchemas = <String, List<Object>>{};
+  factory EmptyExampleConfig.fromBlock(BlockData data) {
+    Map<String, dynamic> fields = data.fields;
+
+    final dynamicSchemas = <(String, Object)>[];
     final schemas = EmptyExampleConfigBase._getDynamicSchemaTables();
-    for (final entry in schemas.entries) {
-      if (map[entry.key] == null) continue;
-      for (final e in map[entry.key]) {
-        if (dynamicSchemas[entry.key] == null) {
-          dynamicSchemas[entry.key] = [];
-        }
-        dynamicSchemas[entry.key]!.add(entry.value.from(e));
+
+    for (final block in data.blocks) {
+      final key = block.$1;
+      if (!schemas.containsKey(key)) {
+        continue;
       }
+      dynamicSchemas.add((key, schemas[key]!.from(block.$2)));
     }
 
     return EmptyExampleConfig(dynamicSchemas: dynamicSchemas);
@@ -222,7 +222,7 @@ class EmptyExampleConfig extends ConfigBaseI
 
   @override
   bool operator ==(covariant EmptyExampleConfig other) {
-    return configMapEqual(dynamicSchemas, other.dynamicSchemas);
+    return configListEqual(dynamicSchemas, other.dynamicSchemas);
   }
 
   @override

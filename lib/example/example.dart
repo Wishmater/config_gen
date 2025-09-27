@@ -33,18 +33,18 @@ mixin ExampleConfigBase on ExampleConfigI {
   @SchemaFieldAnnot(required: false, allowMultiple: true)
   static const _Example4 = Example2Config.staticSchema;
 
-  static void _validator(Map<String, dynamic> values, List<EvaluationError> errors) {}
+  static void _validator(BlockData values, List<EvaluationError> errors) {}
 
-  static Map<String, ({TableSchema schema, dynamic Function(Map<String, dynamic>) from})> _getDynamicSchemaTables() => {
-    "Example5": (schema: Example2Config.schema, from: Example2Config.fromMap),
-    "Example6": (schema: Example2Config.schema, from: Example2Config.fromMap),
+  static Map<String, ({BlockSchema schema, dynamic Function(BlockData) from})> _getDynamicSchemaTables() => {
+    "Example5": (schema: Example2Config.schema, from: Example2Config.fromBlock),
+    "Example6": (schema: Example2Config.schema, from: Example2Config.fromBlock),
   };
 }
 
 @Config(requireStaticSchema: true)
 mixin EmptyExampleConfigBase {
-  static Map<String, ({TableSchema schema, dynamic Function(Map<String, dynamic>) from})> _getDynamicSchemaTables() => {
-    "Example5": (schema: Example2Config.staticSchema, from: Example2Config.fromMap),
-    "Example6": (schema: Example2Config.staticSchema, from: Example2Config.fromMap),
+  static Map<String, ({BlockSchema schema, dynamic Function(BlockData) from})> _getDynamicSchemaTables() => {
+    "Example5": (schema: Example2Config.staticSchema, from: Example2Config.fromBlock),
+    "Example6": (schema: Example2Config.staticSchema, from: Example2Config.fromBlock),
   };
 }

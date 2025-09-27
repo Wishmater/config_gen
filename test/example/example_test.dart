@@ -20,20 +20,24 @@ void main() {
       case EvaluationValidationError():
         fail("${result.errors}");
       case EvaluationSuccess():
-        final actual = ExampleConfig.fromMap(result.values);
+        final actual = ExampleConfig.fromBlock(result.values);
         final expected = ExampleConfig(
-          dynamicSchemas: {
-            "Example5": [
+          dynamicSchemas: [
+            (
+              "Example5",
               Example2Config(
                 fieldA: "Some other Lore2",
                 fieldB: 2.5,
               ),
+            ),
+            (
+              "Example5",
               Example2Config(
                 fieldA: "Some other Lore2",
                 fieldB: 2.5,
               ),
-            ],
-          },
+            ),
+          ],
           fieldA: "Lore Ipsum",
           fieldB: 2,
           fieldE: "Lore Ipsum but with more",

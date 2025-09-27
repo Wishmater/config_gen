@@ -105,7 +105,7 @@ class ConfigGenerator extends GeneratorForAnnotation<Config> {
     }
     SchemaTableGen.writeGetterSchemas(buffer, schemas);
     if (hasDynamicSchema) {
-      buffer.writeln("Map<String, List<Object>> get dynamicSchemas;");
+      buffer.writeln("List<(String, Object)> get dynamicSchemas;");
     }
     buffer.writeln("}");
 
@@ -116,12 +116,12 @@ class ConfigGenerator extends GeneratorForAnnotation<Config> {
 
     // add static Schema
     buffer.writeln("");
-    buffer.writeln("  static const TableSchema staticSchema = TableSchema(");
+    buffer.writeln("  static const BlockSchema staticSchema = BlockSchema(");
     if (annotation.read("ignoreNotInSchema").boolValue) {
       buffer.writeln("    ignoreNotInSchema: true,");
     }
     if (schemas.isNotEmpty) {
-      buffer.write("    tables: ");
+      buffer.write("    blocks: ");
       SchemaTableGen.writeMapSchemas(buffer, schemas, baseClassName);
       buffer.writeln(",");
       buffer.write("    canBeMissingSchemas: ");
@@ -142,9 +142,9 @@ class ConfigGenerator extends GeneratorForAnnotation<Config> {
     // add schema
     buffer.writeln("");
     if (hasDynamicSchema) {
-      buffer.writeln("  static TableSchema get schema => TableSchema(");
-      buffer.writeln("    tables: {");
-      buffer.writeln("      ...staticSchema.tables,");
+      buffer.writeln("  static BlockSchema get schema => BlockSchema(");
+      buffer.writeln("    blocks: {");
+      buffer.writeln("      ...staticSchema.blocks,");
       buffer.writeln("      ...$baseClassName._getDynamicSchemaTables().map((k, v) => MapEntry(k, v.schema)),");
       buffer.writeln("    },");
       buffer.writeln("    fields: staticSchema.fields,");
@@ -161,9 +161,9 @@ class ConfigGenerator extends GeneratorForAnnotation<Config> {
       buffer.writeln("");
 
       buffer.writeln("@override");
-      buffer.writeln("final Map<String, List<Object>> dynamicSchemas;");
+      buffer.writeln("final List<(String, Object)> dynamicSchemas;");
     } else {
-      buffer.writeln("  static TableSchema get schema => staticSchema;");
+      buffer.writeln("  static BlockSchema get schema => staticSchema;");
     }
 
     // add field declarations
@@ -187,8 +187,11 @@ class ConfigGenerator extends GeneratorForAnnotation<Config> {
     // TODO: 3 maybe add an option to make class const
     // generated class can't be const by default because it breaks most defaultTo declarations
     // buffer.writeln("  const $className({");
-    buffer.writeln("  $className({");
+    buffer.write("  $className(");
     bool hasDefaultTos = false;
+    if (fields.isNotEmpty || schemas.isNotEmpty || hasDynamicSchema) {
+      buffer.writeln("{");
+    }
     for (final e in fields) {
       if (e.defaultTo == null && !e.name.startsWith("_")) {
         buffer.writeln(
@@ -203,11 +206,16 @@ class ConfigGenerator extends GeneratorForAnnotation<Config> {
     if (hasDynamicSchema) {
       buffer.writeln("required this.dynamicSchemas,");
     }
+    if (fields.isNotEmpty || schemas.isNotEmpty || hasDynamicSchema) {
+      buffer.write("})");
+    } else {
+      buffer.write(")");
+    }
 
     if (hasDefaultTos) {
       // This hack is needed because default values in constructors must be const, which causes issues with custom
       // objects like Duration. Initializing it here is more robust.
-      buffer.write("  }) : ");
+      buffer.write(" : ");
       bool addedAny = false;
       for (final e in fields) {
         if (e.defaultTo == null && !e.name.startsWith("_")) {
@@ -224,24 +232,25 @@ class ConfigGenerator extends GeneratorForAnnotation<Config> {
       }
       buffer.writeln(";");
     } else {
-      buffer.writeln("  });");
+      buffer.writeln(";");
     }
 
-    // add fromMap
+    // add fromBlock
     buffer.writeln("");
-    buffer.writeln("  factory $className.fromMap(Map<String, dynamic> map) {");
+    buffer.writeln("  factory $className.fromBlock(BlockData data) {");
+    buffer.writeln("    Map<String, dynamic> fields = data.fields;");
     if (hasDynamicSchema) {
       buffer.writeln("""
-        final dynamicSchemas = <String, List<Object>>{};
+
+        final dynamicSchemas = <(String, Object)>[];
         final schemas = $baseClassName._getDynamicSchemaTables();
-        for (final entry in schemas.entries) {
-          if (map[entry.key] == null) continue;
-          for (final e in map[entry.key]) {
-            if (dynamicSchemas[entry.key] == null) {
-              dynamicSchemas[entry.key] = [];
-            }
-            dynamicSchemas[entry.key]!.add(entry.value.from(e));
+
+        for (final block in data.blocks) {
+          final key = block.\$1;
+          if (!schemas.containsKey(key)) {
+            continue;
           }
+          dynamicSchemas.add((key, schemas[key]!.from(block.\$2)));
         }
         """);
     }
@@ -250,9 +259,9 @@ class ConfigGenerator extends GeneratorForAnnotation<Config> {
       buffer.writeln("      dynamicSchemas: dynamicSchemas,");
     }
     for (final e in fields) {
-      buffer.writeln("      ${unprivate(e.name)}: map['${unprivate(e.name)}'],");
+      buffer.writeln("      ${unprivate(e.name)}: fields['${unprivate(e.name)}'],");
     }
-    SchemaTableGen.writeFromMapParameterSchemas(buffer, schemas);
+    SchemaTableGen.writeFromBlockParameterSchemas(buffer, schemas);
     buffer.writeln("    );");
     buffer.writeln("  }");
 
@@ -277,16 +286,20 @@ class ConfigGenerator extends GeneratorForAnnotation<Config> {
     buffer.writeln("  @override");
     buffer.writeln("  bool operator==(covariant $className other) {");
     buffer.write("    return ");
+    var compareFields = [
+      ...fields.map((e) => e.name).map((name) => "$name == other.$name"),
+      ...schemas.where((e) => !e.multiple).map((e) => e.fieldName).map((name) => "$name == other.$name"),
+      ...schemas
+          .where((e) => e.multiple)
+          .map((e) => e.fieldName)
+          .map((name) => "configListEqual($name, other.$name)"),
+      if (hasDynamicSchema) "configListEqual(dynamicSchemas, other.dynamicSchemas)",
+    ];
+    if (compareFields.isEmpty) {
+      compareFields = ["true"];
+    }
     buffer.write(
-      [
-        ...fields.map((e) => e.name).map((name) => "$name == other.$name"),
-        ...schemas.where((e) => !e.multiple).map((e) => e.fieldName).map((name) => "$name == other.$name"),
-        ...schemas
-            .where((e) => e.multiple)
-            .map((e) => e.fieldName)
-            .map((name) => "configListEqual($name, other.$name)"),
-        if (hasDynamicSchema) "configMapEqual(dynamicSchemas, other.dynamicSchemas)",
-      ].join(" && "),
+      compareFields.join(" && "),
     );
     buffer.writeln(";");
     buffer.writeln("  }");

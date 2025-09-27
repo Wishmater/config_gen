@@ -20,7 +20,7 @@ mixin Example2ConfigI {
 
 class Example2Config extends ConfigBaseI
     with Example2ConfigI, Example2ConfigBase {
-  static const TableSchema staticSchema = TableSchema(
+  static const BlockSchema staticSchema = BlockSchema(
     fields: {
       'fieldA': Example2ConfigBase._fieldA,
       'fieldB': Example2ConfigBase._fieldB,
@@ -30,7 +30,7 @@ class Example2Config extends ConfigBaseI
     },
   );
 
-  static TableSchema get schema => staticSchema;
+  static BlockSchema get schema => staticSchema;
 
   @override
   final String fieldA;
@@ -52,13 +52,14 @@ class Example2Config extends ConfigBaseI
   }) : fieldC = fieldC ?? 1,
        fieldE = fieldE ?? "def";
 
-  factory Example2Config.fromMap(Map<String, dynamic> map) {
+  factory Example2Config.fromBlock(BlockData data) {
+    Map<String, dynamic> fields = data.fields;
     return Example2Config(
-      fieldA: map['fieldA'],
-      fieldB: map['fieldB'],
-      fieldC: map['fieldC'],
-      fieldD: map['fieldD'],
-      fieldE: map['fieldE'],
+      fieldA: fields['fieldA'],
+      fieldB: fields['fieldB'],
+      fieldC: fields['fieldC'],
+      fieldD: fields['fieldD'],
+      fieldE: fields['fieldE'],
     );
   }
 

@@ -20,8 +20,8 @@ bool hasGetSchemaTablesMethod(MixinElement2 classElement) {
   final namedFields = (typeArgs[1] as RecordType).namedFields;
   if (namedFields.length != 2 ||
       (namedFields[0].name != "from" ||
-          namedFields[0].type.getDisplayString() != "dynamic Function(Map<String, dynamic>)") ||
-      (namedFields[1].name != "schema" || namedFields[1].type.getDisplayString() != "TableSchema")) {
+          namedFields[0].type.getDisplayString() != "dynamic Function(BlockData)") ||
+      (namedFields[1].name != "schema" || namedFields[1].type.getDisplayString() != "BlockSchema")) {
     return false;
   }
   return true;
@@ -32,7 +32,7 @@ bool hasValidatorMethod(MixinElement2 classElement) {
   if (method == null || !method.isStatic || method.formalParameters.length != 2) {
     return false;
   }
-  if (!method.formalParameters[0].type.isDartCoreMap || !method.formalParameters[1].type.isDartCoreList) {
+  if (method.formalParameters[0].type.getDisplayString() != "BlockData" || !method.formalParameters[1].type.isDartCoreList) {
     return false;
   }
   return true;
@@ -163,14 +163,14 @@ class SchemaTableGen {
     // List<Example2Config>.of((map['Example4'] as List<Map<String, dynamic>>).map(Example2Config.fromMap))
     String from;
     if (multiple) {
-      from = "$type.of((map['$schemaName'] as List<Map<String, dynamic>>).map($_type.fromMap))";
+      from = "$type.of(data.blocksWith('$schemaName').map($_type.fromBlock))";
     } else {
-      from = "$type.fromMap(map['$schemaName'][0])";
+      from = "$type.fromBlock(data.firstBlockWith('$schemaName')!)";
     }
     if (required) {
       buffer.writeln("$fieldName: $from,");
     } else {
-      buffer.writeln("$fieldName: map['$schemaName'] != null ? $from : null,");
+      buffer.writeln("$fieldName: data.blockContainsKey('$schemaName') ? $from : null,");
     }
   }
 
@@ -184,7 +184,7 @@ class SchemaTableGen {
     buffer.writeln("  $type${required ? '' : '?'} get $fieldName;");
   }
 
-  static void writeFromMapParameterSchemas(StringBuffer buffer, List<SchemaTableGen> schemas) {
+  static void writeFromBlockParameterSchemas(StringBuffer buffer, List<SchemaTableGen> schemas) {
     for (final schema in schemas) {
       schema.writeFromMapParameter(buffer);
     }
