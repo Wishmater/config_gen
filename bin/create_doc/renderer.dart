@@ -1,4 +1,4 @@
-import "package:config_gen/bin/create_doc/models.dart";
+import "./models.dart";
 
 class MarkdownRenderer {
   final StringBuffer md;
