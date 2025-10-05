@@ -1,16 +1,41 @@
 import "dart:io";
 
+import "package:args/args.dart";
+import "package:logging/logging.dart";
 import "package:analyzer/dart/analysis/analysis_context_collection.dart";
 import "package:analyzer/dart/analysis/results.dart";
 import "package:analyzer/dart/ast/ast.dart";
 import "package:analyzer/dart/element/element2.dart";
 import "./create_doc/renderer.dart";
 import "./create_doc/models.dart";
+import "./create_doc/resource_provider.dart";
+
+Logger logger = Logger("CREATE_DOC");
 
 void main(List<String> args) async {
+  final argParser = ArgParser()..addFlag("verbose", abbr: "v");
+  final argResult = argParser.parse(args);
+  hierarchicalLoggingEnabled = true;
+  logger.level = switch (argResult.flag("verbose")) {
+    true => Level.ALL,
+    false => Level.WARNING,
+  };
+  logger.onRecord.listen((record) {
+    stderr.write(record);
+    stderr.write("\n");
+  });
+
   final projectRoot = Directory.current.path;
+  logger.info("Project root $projectRoot");
+
+  final resoureceLogger = Logger("RESOURCE")..level = logger.level;
+  resoureceLogger.onRecord.listen((record) {
+    stderr.write(record);
+    stderr.write("\n");
+  });
   final collection = AnalysisContextCollection(
     includedPaths: [projectRoot],
+    resourceProvider: PhysicalResourceProvider(logger: resoureceLogger),
   );
 
   final mdContent = StringBuffer()
@@ -24,6 +49,7 @@ void main(List<String> args) async {
 
   final blocks = <DocGenBlock>[];
   for (final file in dartFiles) {
+    logger.fine("Search context for ${file.path}");
     final context = collection.contextFor(file.path);
     final resolved = await context.currentSession.getResolvedUnit(file.path);
 
@@ -122,7 +148,7 @@ List<File> _findDartFiles(Directory directory) {
   return directory
       .listSync(recursive: true)
       .whereType<File>()
-      .where((file) => file.path.endsWith(".dart"))
+      .where((file) => file.path.endsWith(".config.dart"))
       .where((file) => !file.path.contains(".dart_tool"))
       .where((file) => !file.path.contains("packages"))
       .toList();
