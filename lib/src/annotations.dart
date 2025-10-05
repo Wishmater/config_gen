@@ -7,7 +7,18 @@ class Config {
   /// canBeMissingSchemas field in the Schema declaration
   final bool requireStaticSchema;
 
-  const Config({this.ignoreNotInSchema = false, this.requireStaticSchema = false});
+  final String? documentationName;
+
+  const Config({
+    this.ignoreNotInSchema = false,
+    this.requireStaticSchema = false,
+    this.documentationName,
+  });
+}
+
+class ConfigDocDefault<T> {
+  final T? defaults;
+  const ConfigDocDefault(this.defaults);
 }
 
 /// Mark field to be generated as a nested schema instead of a field

@@ -13,8 +13,13 @@ mixin Example2ConfigI {
 
   /// documenation comment for fieldB
   double get fieldB;
+
+  @ConfigDocDefault<int>(1)
   int get fieldC;
+
   bool? get fieldD;
+
+  @ConfigDocDefault<String>("def")
   String? get fieldE;
 }
 

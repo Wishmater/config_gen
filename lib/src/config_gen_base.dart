@@ -98,8 +98,10 @@ class ConfigGenerator extends GeneratorForAnnotation<Config> {
     final buffer = StringBuffer();
 
     // generate abstract interface, to facilitate adding getters to user mixin
-    buffer.writeln("mixin ${className}I {");
+    buffer.write("mixin ${className}I {");
     for (final e in fields) {
+      buffer.writeln("");
+      if (e.defaultTo != null) buffer.writeln("  @ConfigDocDefault<${e.resType}>(${e.defaultTo})");
       if (e.comment != null) buffer.writeln("  ${e.comment}");
       buffer.writeln("  ${e.resType}${e.nullable ? '?' : ''} get ${e.name};");
     }
@@ -289,10 +291,7 @@ class ConfigGenerator extends GeneratorForAnnotation<Config> {
     var compareFields = [
       ...fields.map((e) => e.name).map((name) => "$name == other.$name"),
       ...schemas.where((e) => !e.multiple).map((e) => e.fieldName).map((name) => "$name == other.$name"),
-      ...schemas
-          .where((e) => e.multiple)
-          .map((e) => e.fieldName)
-          .map((name) => "configListEqual($name, other.$name)"),
+      ...schemas.where((e) => e.multiple).map((e) => e.fieldName).map((name) => "configListEqual($name, other.$name)"),
       if (hasDynamicSchema) "configListEqual(dynamicSchemas, other.dynamicSchemas)",
     ];
     if (compareFields.isEmpty) {

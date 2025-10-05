@@ -3,7 +3,7 @@ import "package:config_gen/config_gen.dart";
 
 part "example2.config.dart";
 
-@Config()
+@Config(documentationName: "Example2")
 mixin Example2ConfigBase on Example2ConfigI {
   /// documenation comment for fieldA
   static const _fieldA = StringField();
