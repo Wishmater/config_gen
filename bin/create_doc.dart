@@ -1,5 +1,6 @@
 import "dart:io";
 
+import "package:analyzer/dart/constant/value.dart";
 import "package:args/args.dart";
 import "package:logging/logging.dart";
 import "package:analyzer/dart/analysis/analysis_context_collection.dart";
@@ -99,7 +100,14 @@ DocGenBlock _generateClassDocumentation((ClassDeclaration, MixinDeclaration) dec
       final defaultAnnotIdx = member.metadata.indexWhere((e) => e.name.name == "ConfigDocDefault");
       String? defaultTo;
       if (defaultAnnotIdx != -1) {
-        defaultTo = member.metadata[defaultAnnotIdx].arguments!.arguments[0].toSource();
+        final defaultsField = member.metadata[defaultAnnotIdx].elementAnnotation!.computeConstantValue()!.getField(
+          "defaults",
+        );
+        try {
+          defaultTo = valueOfDartObject(defaultsField!);
+        } catch (_) {
+          defaultTo = member.metadata[defaultAnnotIdx].arguments!.arguments[0].toSource();
+        }
       }
       fields.add(
         DocGenField(
@@ -164,4 +172,81 @@ String getDoc(Comment? comment) {
     commentStr = commentStr.substring(3);
   }
   return commentStr.replaceAll("///", "\n");
+}
+
+String valueOfDartObject(DartObject object) {
+  if (!object.hasKnownValue) {
+    throw "invalid";
+  }
+  if (object.isNull) {
+    return "null";
+  }
+  final map = <Object? Function(), dynamic>{
+    object.toBoolValue: (bool v) => v ? "true" : "false",
+    object.toDoubleValue: (double v) => v.toStringAsFixed(2),
+    object.toIntValue: (int v) => v.toString(),
+    object.toStringValue: (String v) => '"$v"',
+    object.toSetValue: (Set<DartObject> v) {
+      final buffer = StringBuffer();
+      buffer.write("{ ");
+      for (final e in v) {
+        buffer.write(valueOfDartObject(e));
+        if (e != v.last) {
+          buffer.write(", ");
+        } else {
+          buffer.write(" ");
+        }
+      }
+      buffer.write("}");
+      return buffer.toString();
+    },
+    object.toListValue: (List<DartObject> v) {
+      final buffer = StringBuffer();
+      buffer.write("[ ");
+      for (final e in v) {
+        buffer.write(valueOfDartObject(e));
+        if (e != v.last) {
+          buffer.write(", ");
+        } else {
+          buffer.write(" ");
+        }
+      }
+      buffer.write("]");
+      return buffer.toString();
+    },
+    object.toMapValue: (Map<DartObject, DartObject> v) {
+      final buffer = StringBuffer();
+      buffer.write("{ ");
+      for (final e in v.entries) {
+        buffer.write(valueOfDartObject(e.key));
+        buffer.write(": ");
+        buffer.write(valueOfDartObject(e.value));
+        buffer.write(", ");
+      }
+      buffer.write("}");
+      return buffer.toString();
+    },
+    object.toRecordValue: (({Map<String, DartObject> named, List<DartObject> positional}) v) {
+      final buffer = StringBuffer();
+      buffer.write("( ");
+      for (final e in v.positional) {
+        buffer.write(valueOfDartObject(e));
+        buffer.write(", ");
+      }
+      for (final e in v.named.entries) {
+        buffer.write("${e.key}: ");
+        buffer.write(valueOfDartObject(e.value));
+        buffer.write(", ");
+      }
+      buffer.write(")");
+      return buffer.toString();
+    },
+  };
+
+  for (final e in map.entries) {
+    final v = e.key();
+    if (v == null) continue;
+    return e.value(v);
+  }
+  throw "invalid";
 }

@@ -20,7 +20,7 @@ This document lists all configuration classes marked with `@Config()`.
 |--|--|--|--|
 |fieldA| documenation comment for fieldA|String||
 |fieldB| documenation comment for fieldB|double||
-|fieldC||int|null ?? (sas ? 1 : 2)|
+|fieldC||int|2|
 |fieldD||bool?|null|
 |fieldE||String?|"def"|
 |example2| Example 2 schema|[Example2](#Example2)||
