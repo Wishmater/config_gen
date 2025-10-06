@@ -144,8 +144,8 @@ class ConfigGenerator extends GeneratorForAnnotation<Config> {
     // add schema
     buffer.writeln("");
     if (hasDynamicSchema) {
-      buffer.writeln("  static BlockSchema get schema => BlockSchema(");
-      buffer.writeln("    blocks: {");
+      buffer.writeln("  static BlockSchema get schema => LazySchema(");
+      buffer.writeln("    blocksGetter: () => {");
       buffer.writeln("      ...staticSchema.blocks,");
       buffer.writeln("      ...$baseClassName._getDynamicSchemaTables().map((k, v) => MapEntry(k, v.schema)),");
       buffer.writeln("    },");
@@ -154,10 +154,10 @@ class ConfigGenerator extends GeneratorForAnnotation<Config> {
       buffer.writeln("    ignoreNotInSchema: staticSchema.ignoreNotInSchema,");
       if (!annotation.read("requireStaticSchema").boolValue) {
         buffer.writeln(
-          "    canBeMissingSchemas: <String>{...staticSchema.canBeMissingSchemas, ...$baseClassName._getDynamicSchemaTables().keys},",
+          "    canBeMissingSchemasGetter: () => <String>{...staticSchema.canBeMissingSchemas, ...$baseClassName._getDynamicSchemaTables().keys},",
         );
       } else {
-        buffer.writeln("    canBeMissingSchemas: staticSchema.canBeMissingSchemas,");
+        buffer.writeln("    canBeMissingSchemasGetter: () => staticSchema.canBeMissingSchemas,");
       }
       buffer.writeln("  );");
       buffer.writeln("");
