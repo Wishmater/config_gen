@@ -19,7 +19,7 @@ class MarkdownRenderer {
       md.writeln("|--|--|--|--|");
 
       for (final field in block.fields) {
-        md.write("|${field.name}|${field.description.replaceAll('\n', '&#10')}".mdSanitize());
+        md.write("|${field.name}|${field.description}".mdSanitize());
         md.writeln("|${stringFromType(field.type)}|${fromDefault(field.defaultTo, field.type.isNullable)}|".mdSanitize());
       }
       md.writeln();
@@ -54,6 +54,6 @@ class MarkdownRenderer {
 
 extension on String {
   String mdSanitize() {
-    return replaceAll("<", "\\<").replaceAll(">", "\\>");
+    return replaceAll("<", "\\<").replaceAll(">", "\\>").replaceAll("\n", "&#10;");
   }
 }

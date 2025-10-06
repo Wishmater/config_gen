@@ -347,4 +347,8 @@ class ConfigGenerator extends GeneratorForAnnotation<Config> {
   }
 }
 
-Builder configBuilder(BuilderOptions options) => PartBuilder([ConfigGenerator()], ".config.dart");
+Builder configBuilder(BuilderOptions options) => PartBuilder(
+  [ConfigGenerator()],
+  ".config.dart",
+  header: "// GENERATED CODE - DO NOT MODIFY BY HAND\n// ignore_for_file: type=lint, type=info, type=warning",
+);
