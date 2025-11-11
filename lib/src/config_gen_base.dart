@@ -240,7 +240,7 @@ class ConfigGenerator extends GeneratorForAnnotation<Config> {
     // add fromBlock
     buffer.writeln("");
     buffer.writeln("  factory $className.fromBlock(BlockData data) {");
-    buffer.writeln("    Map<String, dynamic> fields = data.fields;");
+    buffer.writeln("    Map<String, dynamic> fields = data.fields.map((k,v) => MapEntry(k.value, v));");
     if (hasDynamicSchema) {
       buffer.writeln("""
 
@@ -248,7 +248,7 @@ class ConfigGenerator extends GeneratorForAnnotation<Config> {
         final schemas = $baseClassName._getDynamicSchemaTables();
 
         for (final block in data.blocks) {
-          final key = block.\$1;
+          final key = block.\$1.value;
           if (!schemas.containsKey(key)) {
             continue;
           }

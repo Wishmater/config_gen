@@ -170,7 +170,7 @@ class SchemaTableGen {
     if (required) {
       buffer.writeln("$fieldName: $from,");
     } else {
-      buffer.writeln("$fieldName: data.blockContainsKey('$schemaName') ? $from : null,");
+      buffer.writeln("$fieldName: data.blockContainsKeyString('$schemaName') ? $from : null,");
     }
   }
 

@@ -51,8 +51,8 @@ class ExampleConfig extends ConfigBaseI with ExampleConfigI, ExampleConfigBase {
     },
   );
 
-  static BlockSchema get schema => BlockSchema(
-    blocks: {
+  static BlockSchema get schema => LazySchema(
+    blocksGetter: () => {
       ...staticSchema.blocks,
       ...ExampleConfigBase._getDynamicSchemaTables().map(
         (k, v) => MapEntry(k, v.schema),
@@ -61,7 +61,7 @@ class ExampleConfig extends ConfigBaseI with ExampleConfigI, ExampleConfigBase {
     fields: staticSchema.fields,
     validator: staticSchema.validator,
     ignoreNotInSchema: staticSchema.ignoreNotInSchema,
-    canBeMissingSchemas: <String>{
+    canBeMissingSchemasGetter: () => <String>{
       ...staticSchema.canBeMissingSchemas,
       ...ExampleConfigBase._getDynamicSchemaTables().keys,
     },
@@ -102,13 +102,15 @@ class ExampleConfig extends ConfigBaseI with ExampleConfigI, ExampleConfigBase {
        fieldE = fieldE ?? "def";
 
   factory ExampleConfig.fromBlock(BlockData data) {
-    Map<String, dynamic> fields = data.fields;
+    Map<String, dynamic> fields = data.fields.map(
+      (k, v) => MapEntry(k.value, v),
+    );
 
     final dynamicSchemas = <(String, Object)>[];
     final schemas = ExampleConfigBase._getDynamicSchemaTables();
 
     for (final block in data.blocks) {
-      final key = block.$1;
+      final key = block.$1.value;
       if (!schemas.containsKey(key)) {
         continue;
       }
@@ -123,10 +125,10 @@ class ExampleConfig extends ConfigBaseI with ExampleConfigI, ExampleConfigBase {
       fieldD: fields['fieldD'],
       fieldE: fields['fieldE'],
       example2: Example2Config.fromBlock(data.firstBlockWith('example2')!),
-      example3: data.blockContainsKey('example3')
+      example3: data.blockContainsKeyString('example3')
           ? Example2Config.fromBlock(data.firstBlockWith('example3')!)
           : null,
-      example4: data.blockContainsKey('Example4')
+      example4: data.blockContainsKeyString('Example4')
           ? List<Example2Config>.of(
               data.blocksWith('Example4').map(Example2Config.fromBlock),
             )
@@ -184,8 +186,8 @@ class EmptyExampleConfig extends ConfigBaseI
     with EmptyExampleConfigI, EmptyExampleConfigBase {
   static const BlockSchema staticSchema = BlockSchema(fields: {});
 
-  static BlockSchema get schema => BlockSchema(
-    blocks: {
+  static BlockSchema get schema => LazySchema(
+    blocksGetter: () => {
       ...staticSchema.blocks,
       ...EmptyExampleConfigBase._getDynamicSchemaTables().map(
         (k, v) => MapEntry(k, v.schema),
@@ -194,7 +196,7 @@ class EmptyExampleConfig extends ConfigBaseI
     fields: staticSchema.fields,
     validator: staticSchema.validator,
     ignoreNotInSchema: staticSchema.ignoreNotInSchema,
-    canBeMissingSchemas: staticSchema.canBeMissingSchemas,
+    canBeMissingSchemasGetter: () => staticSchema.canBeMissingSchemas,
   );
 
   @override
@@ -203,13 +205,15 @@ class EmptyExampleConfig extends ConfigBaseI
   EmptyExampleConfig({required this.dynamicSchemas});
 
   factory EmptyExampleConfig.fromBlock(BlockData data) {
-    Map<String, dynamic> fields = data.fields;
+    Map<String, dynamic> fields = data.fields.map(
+      (k, v) => MapEntry(k.value, v),
+    );
 
     final dynamicSchemas = <(String, Object)>[];
     final schemas = EmptyExampleConfigBase._getDynamicSchemaTables();
 
     for (final block in data.blocks) {
-      final key = block.$1;
+      final key = block.$1.value;
       if (!schemas.containsKey(key)) {
         continue;
       }

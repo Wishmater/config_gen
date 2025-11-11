@@ -59,7 +59,9 @@ class Example2Config extends ConfigBaseI
        fieldE = fieldE ?? "def";
 
   factory Example2Config.fromBlock(BlockData data) {
-    Map<String, dynamic> fields = data.fields;
+    Map<String, dynamic> fields = data.fields.map(
+      (k, v) => MapEntry(k.value, v),
+    );
     return Example2Config(
       fieldA: fields['fieldA'],
       fieldB: fields['fieldB'],
