@@ -1,16 +1,16 @@
 import "package:analyzer/dart/ast/ast.dart";
 import "package:analyzer/dart/ast/visitor.dart";
 import "package:analyzer/dart/constant/value.dart";
-import "package:analyzer/dart/element/element2.dart";
+import "package:analyzer/dart/element/element.dart";
 import "package:analyzer/dart/element/type.dart";
 
-bool hasGetSchemaTablesMethod(MixinElement2 classElement) {
-  final method = classElement.getMethod2("_getDynamicSchemaTables");
+bool hasGetSchemaTablesMethod(MixinElement classElement) {
+  final method = classElement.getMethod("_getDynamicSchemaTables");
   if (method == null || !method.isStatic || method.formalParameters.isNotEmpty) {
     return false;
   }
   final returnType = method.returnType;
-  if (returnType is! InterfaceType || returnType.element3.name3 != "Map") {
+  if (returnType is! InterfaceType || returnType.element.name != "Map") {
     return false;
   }
   final typeArgs = returnType.typeArguments;
@@ -27,8 +27,8 @@ bool hasGetSchemaTablesMethod(MixinElement2 classElement) {
   return true;
 }
 
-bool hasValidatorMethod(MixinElement2 classElement) {
-  final method = classElement.getMethod2("_validator");
+bool hasValidatorMethod(MixinElement classElement) {
+  final method = classElement.getMethod("_validator");
   if (method == null || !method.isStatic || method.formalParameters.length != 2) {
     return false;
   }
@@ -43,11 +43,11 @@ String lowerFirst(String str) {
   return str[0].toLowerCase() + str.substring(1);
 }
 
-(bool, T?) isFieldAnnotatedWith<T>(FieldElement2 field, String name, T Function(DartObject, FieldElement2) transform) {
-  final index = field.metadata2.annotations.indexWhere((annot) => annot.element2?.displayName == name);
+(bool, T?) isFieldAnnotatedWith<T>(FieldElement field, String name, T Function(DartObject, FieldElement) transform) {
+  final index = field.metadata.annotations.indexWhere((annot) => annot.element?.displayName == name);
   final isAnnotated = index != -1;
   if (isAnnotated) {
-    final object = field.metadata2.annotations[index].computeConstantValue()!;
+    final object = field.metadata.annotations[index].computeConstantValue()!;
     return (isAnnotated, transform(object, field));
   }
   return (isAnnotated, null);
@@ -70,18 +70,18 @@ class DefaultToVisitor extends SimpleAstVisitor<void> {
 }
 
 // Extract the source of the defaultTo argument using AST
-String? getDefaultToSource(FieldElement2 field) {
+String? getDefaultToSource(FieldElement field) {
   try {
     // Get the compilation unit and parse the initializer
     final visitor = DefaultToVisitor();
     field.constantInitializer!.accept(visitor);
     if (visitor.defaultToSource == null) {
-      // log.warning('No defaultTo argument found in initializer for field ${field.name3}');
+      // log.warning('No defaultTo argument found in initializer for field ${field.name}');
       return null;
     }
     return visitor.defaultToSource;
   } catch (e) {
-    // log.warning('Error extracting defaultTo source for field ${field.name3}: $e');
+    // log.warning('Error extracting defaultTo source for field ${field.name}: $e');
     return null;
   }
 }
@@ -139,8 +139,8 @@ class SchemaTableGen {
   }) : _name = name,
        _type = type;
 
-  factory SchemaTableGen.from(DartObject object, FieldElement2 field) {
-    String? type = object.getField("type")?.toTypeValue()?.element3?.name3;
+  factory SchemaTableGen.from(DartObject object, FieldElement field) {
+    String? type = object.getField("type")?.toTypeValue()?.element?.name;
     if (type == null) {
       final initializer = field.constantInitializer!.toSource();
       // awful hack
@@ -148,7 +148,7 @@ class SchemaTableGen {
     }
     return SchemaTableGen(
       type: type,
-      name: unprivate(field.name3!),
+      name: unprivate(field.name!),
       comment: field.documentationComment,
       required: object.getField("required")!.toBoolValue()!,
       multiple: object.getField("allowMultiple")!.toBoolValue()!,

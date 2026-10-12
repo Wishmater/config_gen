@@ -2,24 +2,24 @@ import "package:build/build.dart";
 import "package:config_gen/src/annotations.dart";
 import "package:config_gen/src/utils.dart";
 import "package:source_gen/source_gen.dart";
-import "package:analyzer/dart/element/element2.dart";
+import "package:analyzer/dart/element/element.dart";
 import "package:analyzer/dart/element/type.dart";
 
 class ConfigGenerator extends GeneratorForAnnotation<Config> {
   @override
   String generateForAnnotatedElement(
-    Element2 element,
+    Element element,
     ConstantReader annotation,
     BuildStep buildStep,
   ) {
-    if (element is! MixinElement2) {
+    if (element is! MixinElement) {
       throw InvalidGenerationSourceError(
         "Config annotation can only be applied to a mixin.",
         element: element,
       );
     }
 
-    final baseClassName = element.name3;
+    final baseClassName = element.name;
     if (baseClassName == null) {
       throw InvalidGenerationSourceError(
         "Invalid name for mixin: null",
@@ -37,7 +37,7 @@ class ConfigGenerator extends GeneratorForAnnotation<Config> {
     final fields = <FieldData>[];
     final schemas = <SchemaTableGen>[];
     // traverse fields and parse data needed to generate valid fields
-    for (final e in element.fields2) {
+    for (final e in element.fields) {
       final (isSchema, annotation) = isFieldAnnotatedWith(e, "$SchemaFieldAnnot", SchemaTableGen.from);
 
       final resType = getResType(e.type);
@@ -62,7 +62,7 @@ class ConfigGenerator extends GeneratorForAnnotation<Config> {
           element: element,
         );
       }
-      final originalName = e.name3!;
+      final originalName = e.name!;
       if (!originalName.startsWith("_")) {
         throw InvalidGenerationSourceError(
           "Field declarations must be private",
@@ -327,13 +327,13 @@ class ConfigGenerator extends GeneratorForAnnotation<Config> {
     }
     // Check type and its supertypes for Field<Rec, Res>
     InterfaceType? fieldType;
-    if (type.element3.name3 == "Field" && type.typeArguments.length == 2) {
+    if (type.element.name == "Field" && type.typeArguments.length == 2) {
       fieldType = type;
     } else {
-      for (final supertype in type.element3.allSupertypes) {
-        // log.warning(type.asInstanceOf2(supertype.element3));
-        if (supertype.element3.name3 == "Field" && supertype.typeArguments.length == 2) {
-          fieldType = type.asInstanceOf2(supertype.element3);
+      for (final supertype in type.element.allSupertypes) {
+        // log.warning(type.asInstanceOf(supertype.element));
+        if (supertype.element.name == "Field" && supertype.typeArguments.length == 2) {
+          fieldType = type.asInstanceOf(supertype.element);
           break;
         }
       }
@@ -341,7 +341,7 @@ class ConfigGenerator extends GeneratorForAnnotation<Config> {
     if (fieldType == null) {
       return null;
     }
-    // log.warning("${type} ${fieldType} ${fieldType.typeArguments} ${fieldType.element3}");
+    // log.warning("${type} ${fieldType} ${fieldType.typeArguments} ${fieldType.element}");
     // Return Res (second type argument)
     return fieldType.typeArguments[1];
   }

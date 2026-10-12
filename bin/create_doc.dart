@@ -6,7 +6,7 @@ import "package:logging/logging.dart";
 import "package:analyzer/dart/analysis/analysis_context_collection.dart";
 import "package:analyzer/dart/analysis/results.dart";
 import "package:analyzer/dart/ast/ast.dart";
-import "package:analyzer/dart/element/element2.dart";
+import "package:analyzer/dart/element/element.dart";
 import "./create_doc/renderer.dart";
 import "./create_doc/models.dart";
 import "./create_doc/resource_provider.dart";
@@ -86,9 +86,9 @@ DocGenBlock _generateClassDocumentation((ClassDeclaration, MixinDeclaration) dec
   final fields = <DocGenField>[];
   for (final member in mixinDecl.members) {
     if (member is MethodDeclaration && member.isGetter) {
-      final element = member.returnType?.type?.element3;
+      final element = member.returnType?.type?.element;
       DocGenType type;
-      if (element is ClassElement2) {
+      if (element is ClassElement) {
         if (element.allSupertypes.any((e) => e.getDisplayString() == "ConfigBaseI")) {
           type = DocGenTypeBlockIcomplete(member.returnType!.toString());
         } else {
@@ -119,7 +119,7 @@ DocGenBlock _generateClassDocumentation((ClassDeclaration, MixinDeclaration) dec
       );
     }
   }
-  final blockName = (classDecl.withClause!.mixinTypes.last.element2 as MixinElement2).metadata2.annotations[0]
+  final blockName = (classDecl.withClause!.mixinTypes.last.element as MixinElement).metadata.annotations[0]
       .computeConstantValue()!
       .getField("documentationName")!
       .toStringValue();
@@ -145,7 +145,7 @@ List<(ClassDeclaration, MixinDeclaration)> _findConfigClasses(CompilationUnit un
           classDecl,
           unit.declarations
               .whereType<MixinDeclaration>()
-              .where((mixin) => mixin.name.toString() == classDecl.withClause!.mixinTypes.first.name2.toString())
+              .where((mixin) => mixin.name.toString() == classDecl.withClause!.mixinTypes.first.name.toString())
               .first,
         );
       })
